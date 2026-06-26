@@ -1,67 +1,95 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { uploadDocument, closeDocumentApi } from "./api";
+import Sidebar from "./components/Sidebar";
+import Home from "./components/Home";
+import Workspace from "./components/Workspace";
 
 function App() {
-  const [file, setFile] = useState(null);
-  const [status, setStatus] = useState("");
+  const [activeScreen, setActiveScreen] = useState("home");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [statusMsg, setStatusMsg] = useState(
+    "All rights reserved © LUNPIA 2026",
+  );
+  const [docDetails, setDocDetails] = useState(null);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+  const fileInputRef = useRef(null);
+
+  const triggerFileUpload = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      setStatus("Pilih file terlebih dahulu.");
-      return;
-    }
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    // Menggunakan FormData untuk mengirim file
-    const formData = new FormData();
-    formData.append("file", file);
-
-    setStatus("Mengunggah...");
+    setStatusMsg("⏳ Memproses dokumen...");
 
     try {
-      const response = await fetch("http://localhost:3000/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-      setStatus(`Sukses: ${result.message}`);
+      const result = await uploadDocument(file);
+      if (result.engineState && result.engineState.doc_id) {
+        setDocDetails(result.engineState);
+        setStatusMsg(
+          `${result.engineState.filename} | Total: ${result.engineState.total_pages} Pages`,
+        );
+        setActiveScreen("workspace");
+      }
     } catch (error) {
-      setStatus("Gagal terhubung ke backend.");
+      setStatusMsg("❌ Gagal terhubung ke sistem.");
       console.error(error);
     }
+
+    e.target.value = null; // Reset input
+  };
+
+  const closeDocument = async () => {
+    if (docDetails) {
+      try {
+        await closeDocumentApi(docDetails.doc_id);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setDocDetails(null);
+    setActiveScreen("home");
+    setStatusMsg("All rights reserved © LUNPIA 2026");
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg border border-gray-100">
-        <h1 className="mb-6 text-2xl font-bold text-gray-800 text-center">
-          CoreKit PDF Uploader
-        </h1>
+    <div id="app-container">
+      <Sidebar
+        activeScreen={activeScreen}
+        setActiveScreen={setActiveScreen}
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        docDetails={docDetails}
+      />
 
-        <div className="mb-6">
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={handleFileChange}
-            className="w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:py-2 file:px-4 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-          />
+      <div id="main-content">
+        <input
+          type="file"
+          accept="application/pdf"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          style={{ display: "none" }}
+        />
+
+        <Home
+          activeScreen={activeScreen}
+          triggerFileUpload={triggerFileUpload}
+        />
+
+        <Workspace
+          activeScreen={activeScreen}
+          docDetails={docDetails}
+          triggerFileUpload={triggerFileUpload}
+          closeDocument={closeDocument}
+        />
+
+        {/* PINDAHKAN STATUS BAR KE SINI */}
+        <div id="status-bar">
+          <span id="status-msg">{statusMsg}</span>
+          <span>Balai Besar POM di Semarang</span>
         </div>
-
-        <button
-          onClick={handleUpload}
-          className="w-full rounded-md bg-blue-600 py-2.5 text-white font-semibold transition hover:bg-blue-700 active:bg-blue-800 cursor-pointer"
-        >
-          Unggah Dokumen
-        </button>
-
-        {status && (
-          <div className="mt-4 p-3 rounded-md bg-gray-50 text-center text-sm font-medium text-gray-700 border border-gray-200">
-            {status}
-          </div>
-        )}
       </div>
     </div>
   );

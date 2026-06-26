@@ -1,0 +1,29 @@
+{
+  "name": "corekit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:ui": "cd frontend && npm run dev",
+  "start:gateway": "cd backend && npm run start:dev",
+  "start:engine": "cd engine && .\\venv\\Scripts\\activate && uvicorn main:app --reload",
+  "dev": "concurrently \"npm run start:ui\" \"npm run start:gateway\" \"npm run start:engine\""
+    
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agilizzulhaq/CoreKit.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/agilizzulhaq/CoreKit/issues"
+  },
+  "homepage": "https://github.com/agilizzulhaq/CoreKit#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}
