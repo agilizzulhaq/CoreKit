@@ -6,7 +6,8 @@ import Workspace from "./components/Workspace";
 
 function App() {
   const [activeScreen, setActiveScreen] = useState("home");
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeMenu, setActiveMenu] = useState("home"); // key indikator sidebar: home | doc-conversion | pdf-tools | qr-code
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [statusMsg, setStatusMsg] = useState(
     "All rights reserved © LUNPIA 2026",
   );
@@ -32,13 +33,14 @@ function App() {
           `${result.engineState.filename} | Total: ${result.engineState.total_pages} Pages`,
         );
         setActiveScreen("workspace");
+        setActiveMenu("pdf-tools"); // sinkronkan indikator sidebar ke PDF Tools
       }
     } catch (error) {
       setStatusMsg("❌ Gagal terhubung ke sistem.");
       console.error(error);
     }
 
-    e.target.value = null; // Reset input
+    e.target.value = null;
   };
 
   const closeDocument = async () => {
@@ -51,47 +53,53 @@ function App() {
     }
     setDocDetails(null);
     setActiveScreen("home");
+    setActiveMenu("home"); // kembalikan indikator sidebar ke Home
     setStatusMsg("All rights reserved © LUNPIA 2026");
   };
 
   return (
-    <div id="app-container">
-      <Sidebar
-        activeScreen={activeScreen}
-        setActiveScreen={setActiveScreen}
-        isCollapsed={isSidebarCollapsed}
-        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        docDetails={docDetails}
-      />
-
-      <div id="main-content">
-        <input
-          type="file"
-          accept="application/pdf"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          style={{ display: "none" }}
-        />
-
-        <Home
+    <>
+      <div id="app-container">
+        <Sidebar
           activeScreen={activeScreen}
-          triggerFileUpload={triggerFileUpload}
-        />
-
-        <Workspace
-          activeScreen={activeScreen}
+          setActiveScreen={setActiveScreen}
+          activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
+          isCollapsed={isSidebarCollapsed}
+          toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           docDetails={docDetails}
-          triggerFileUpload={triggerFileUpload}
-          closeDocument={closeDocument}
         />
 
-        {/* PINDAHKAN STATUS BAR KE SINI */}
-        <div id="status-bar">
-          <span id="status-msg">{statusMsg}</span>
-          <span>Balai Besar POM di Semarang</span>
+        <div id="main-content">
+          <input
+            type="file"
+            accept="application/pdf"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            style={{ display: "none" }}
+          />
+
+          <Home
+            activeScreen={activeScreen}
+            triggerFileUpload={triggerFileUpload}
+            activeMenu={activeMenu}
+            setActiveMenu={setActiveMenu}
+          />
+
+          <Workspace
+            activeScreen={activeScreen}
+            docDetails={docDetails}
+            triggerFileUpload={triggerFileUpload}
+            closeDocument={closeDocument}
+          />
         </div>
       </div>
-    </div>
+
+      <div id="status-bar">
+        <span id="status-msg">{statusMsg}</span>
+        <span>Balai Besar POM di Semarang</span>
+      </div>
+    </>
   );
 }
 
