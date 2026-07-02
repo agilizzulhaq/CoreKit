@@ -1,59 +1,40 @@
 import { useState, useRef } from "react";
-import { uploadDocument, closeDocumentApi } from "./api";
 import Sidebar from "./components/Sidebar";
 import Home from "./components/Home";
 import Workspace from "./components/Workspace";
 
 function App() {
   const [activeScreen, setActiveScreen] = useState("home");
-  const [activeMenu, setActiveMenu] = useState("home"); // key indikator sidebar: home | doc-conversion | pdf-tools | qr-code
+  const [activeMenu, setActiveMenu] = useState("home");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [statusMsg, setStatusMsg] = useState(
     "All rights reserved © LUNPIA 2026",
   );
-  const [docDetails, setDocDetails] = useState(null);
 
-  const fileInputRef = useRef(null);
+  // State baru untuk fitur spesifik
+  const [activeModal, setActiveModal] = useState(null); // 'merge', 'split', dll
+  const [featureFiles, setFeatureFiles] = useState([]); // Menyimpan file untuk diproses
 
-  const triggerFileUpload = () => {
-    if (fileInputRef.current) fileInputRef.current.click();
+  const mergeFileInputRef = useRef(null);
+
+  // Trigger input file khusus untuk Merge (Bisa multiple files)
+  const triggerMergeUpload = () => {
+    if (mergeFileInputRef.current) mergeFileInputRef.current.click();
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setStatusMsg("⏳ Memproses dokumen...");
-
-    try {
-      const result = await uploadDocument(file);
-      if (result.engineState && result.engineState.doc_id) {
-        setDocDetails(result.engineState);
-        setStatusMsg(
-          `${result.engineState.filename} | Total: ${result.engineState.total_pages} Pages`,
-        );
-        setActiveScreen("workspace");
-        setActiveMenu("pdf-tools"); // sinkronkan indikator sidebar ke PDF Tools
-      }
-    } catch (error) {
-      setStatusMsg("❌ Gagal terhubung ke sistem.");
-      console.error(error);
+  const handleMergeFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("merge");
+      setStatusMsg(`Memilih ${files.length} file untuk digabungkan`);
     }
-
-    e.target.value = null;
+    e.target.value = null; // Reset input
   };
 
-  const closeDocument = async () => {
-    if (docDetails) {
-      try {
-        await closeDocumentApi(docDetails.doc_id);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    setDocDetails(null);
-    setActiveScreen("home");
-    setActiveMenu("home"); // kembalikan indikator sidebar ke Home
+  const handleCloseModal = () => {
+    setActiveModal(null);
+    setFeatureFiles([]);
     setStatusMsg("All rights reserved © LUNPIA 2026");
   };
 
@@ -67,30 +48,32 @@ function App() {
           setActiveMenu={setActiveMenu}
           isCollapsed={isSidebarCollapsed}
           toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          docDetails={docDetails}
         />
 
         <div id="main-content">
+          {/* Input file khusus Merge (multiple) */}
           <input
             type="file"
             accept="application/pdf"
-            ref={fileInputRef}
-            onChange={handleFileChange}
+            multiple
+            ref={mergeFileInputRef}
+            onChange={handleMergeFileChange}
             style={{ display: "none" }}
           />
 
           <Home
             activeScreen={activeScreen}
-            triggerFileUpload={triggerFileUpload}
             activeMenu={activeMenu}
             setActiveMenu={setActiveMenu}
+            triggerMergeUpload={triggerMergeUpload}
           />
 
+          {/* Workspace sekarang bertindak sebagai Modal Manager untuk tiap fitur */}
           <Workspace
-            activeScreen={activeScreen}
-            docDetails={docDetails}
-            triggerFileUpload={triggerFileUpload}
-            closeDocument={closeDocument}
+            activeModal={activeModal}
+            closeModal={handleCloseModal}
+            files={featureFiles}
+            setFiles={setFeatureFiles}
           />
         </div>
       </div>

@@ -1,3 +1,4 @@
+// frontend\src\components\Sidebar.jsx
 import { useEffect, useRef } from "react";
 
 // Daftar menu: key dipakai untuk sinkronisasi dengan scrollspy di Home.jsx

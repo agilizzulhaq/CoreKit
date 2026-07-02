@@ -1,96 +1,62 @@
 import { useEffect, useRef, useState } from "react";
 
-// Mapping id elemen kategori -> key menu sidebar
 const SECTION_KEY_MAP = [
   { id: "cat-doc-conversion", key: "doc-conversion" },
   { id: "cat-pdf-tools", key: "pdf-tools" },
   { id: "cat-qr-code", key: "qr-code" },
 ];
-
-// Jarak ambang (px) dari atas container: section dianggap "aktif"
-// begitu bagian atasnya melewati garis ini.
 const SCROLLSPY_OFFSET = 120;
 
 export default function Home({
   activeScreen,
-  triggerFileUpload,
   setIsSidebarHidden,
   activeMenu,
   setActiveMenu,
+  triggerMergeUpload, // Prop baru
 }) {
   const toolsRef = useRef(null);
   const heroRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Observer untuk mengatur animasi slide-in fitur, memunculkan sidebar,
-    // dan menentukan apakah kita sedang di "Home" (hero) atau di "Features".
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          if (typeof setIsSidebarHidden === "function") {
-            setIsSidebarHidden(false); // Tampilkan sidebar saat fitur terlihat
-          }
-          // Begitu container fitur terlihat, langsung hitung kategori teratas
+          if (typeof setIsSidebarHidden === "function")
+            setIsSidebarHidden(false);
           computeActiveSection();
         } else {
-          if (typeof setIsSidebarHidden === "function") {
-            setIsSidebarHidden(true); // Jika hero terlihat, sembunyikan sidebar lagi
-          }
-          // Sedang di hero -> indikator sidebar harus di "Home"
-          if (typeof setActiveMenu === "function") {
-            setActiveMenu("home");
-          }
+          if (typeof setIsSidebarHidden === "function")
+            setIsSidebarHidden(true);
+          if (typeof setActiveMenu === "function") setActiveMenu("home");
         }
       },
       { threshold: 0.2 },
     );
-
-    if (toolsRef.current) {
-      observer.observe(toolsRef.current);
-    }
-
+    if (toolsRef.current) observer.observe(toolsRef.current);
     return () => {
       if (toolsRef.current) observer.unobserve(toolsRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setIsSidebarHidden]);
 
-  // Hitung kategori mana yang sedang "aktif" berdasarkan posisi scroll,
-  // bukan berdasarkan IntersectionObserver band — supaya section pendek
-  // seperti "Doc Conversion" tetap terdeteksi dengan benar.
   const computeActiveSection = () => {
     const container = toolsRef.current;
     if (!container || typeof setActiveMenu !== "function") return;
-
     const containerTop = container.getBoundingClientRect().top;
-
-    // Default ke kategori pertama (paling atas)
     let currentKey = SECTION_KEY_MAP[0].key;
-
     for (const { id, key } of SECTION_KEY_MAP) {
       const el = document.getElementById(id);
       if (!el) continue;
-
       const relativeTop = el.getBoundingClientRect().top - containerTop;
-
-      // Jika bagian atas section sudah melewati garis ambang,
-      // section ini (atau yang setelahnya) dianggap aktif.
-      if (relativeTop <= SCROLLSPY_OFFSET) {
-        currentKey = key;
-      }
+      if (relativeTop <= SCROLLSPY_OFFSET) currentKey = key;
     }
-
     setActiveMenu(currentKey);
   };
 
-  // Pasang listener scroll pada container fitur (bukan window),
-  // karena container inilah yang benar-benar discroll oleh user.
   useEffect(() => {
     const container = toolsRef.current;
     if (!container) return;
-
     let ticking = false;
     const handleScroll = () => {
       if (ticking) return;
@@ -100,27 +66,20 @@ export default function Home({
         ticking = false;
       });
     };
-
     container.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => container.removeEventListener("scroll", handleScroll);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setActiveMenu]);
 
   const handleFeatureClick = (e, featureName) => {
     e.currentTarget.scrollIntoView({ behavior: "smooth", block: "center" });
-
-    console.log(`Fitur ${featureName} diklik!`);
     alert(
-      `Membuka modul: ${featureName}\n(Akan dihubungkan ke Modal/State UI React selanjutnya)`,
+      `Membuka modul: ${featureName}\n(Akan dihubungkan ke fitur selanjutnya)`,
     );
   };
 
   const scrollToTools = () => {
     const toolsContainer = document.getElementById("home-tools-container");
-    if (toolsContainer) {
-      toolsContainer.scrollIntoView({ behavior: "smooth" });
-    }
+    if (toolsContainer) toolsContainer.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -134,7 +93,6 @@ export default function Home({
           <h1>LUNPIA Workspace</h1>
           <p>Smart and Secure Solution for Your Digital Document Management.</p>
         </div>
-
         <div className="scroll-indicator" onClick={scrollToTools}>
           <span className="scroll-text">Scroll to see features</span>
           <svg
@@ -189,15 +147,7 @@ export default function Home({
             <h2>PDF Tools</h2>
           </div>
           <div className="grid" id="grid-pdf-tools">
-            <div className="card" onClick={triggerFileUpload}>
-              <div className="card-icon">
-                <img src="/assets/folder-fill.svg" alt="Open PDF" />
-              </div>
-              <div className="card-text">
-                <h3>Open PDF</h3>
-                <p>View & edit document in Workspace</p>
-              </div>
-            </div>
+            {/* Open PDF dihapus dari sini */}
 
             <div
               className="card"
@@ -225,10 +175,8 @@ export default function Home({
               </div>
             </div>
 
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Merge PDF")}
-            >
+            {/* Panggil fungsi triggerMergeUpload di sini */}
+            <div className="card" onClick={triggerMergeUpload}>
               <div className="card-icon">
                 <img src="/assets/file-earmark-plus-fill.svg" alt="Merge PDF" />
               </div>
