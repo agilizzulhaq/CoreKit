@@ -65,7 +65,7 @@ body {
 }
 
 .screen::-webkit-scrollbar {
-  display: none; /* Chrome, Safari & Opera */
+  display: none;
 }
 
 .screen.active {
@@ -113,12 +113,10 @@ body {
   transition: opacity 0.2s;
 }
 
-/* Wrapper untuk seluruh daftar menu + indikator yang bergeser */
 .nav-list {
   position: relative;
 }
 
-/* Indikator garis aktif yang bergeser mengikuti posisi menu aktif */
 .nav-indicator {
   position: absolute;
   left: 0;
@@ -220,7 +218,7 @@ body {
 
 /* --- 4. HALAMAN BERANDA (HOME SCREEN) --- */
 .hero {
-  flex: 0 0 100%; /* Mengambil murni 100% tinggi parent */
+  flex: 0 0 100%;
   height: 100%;
   box-sizing: border-box;
   display: flex;
@@ -280,7 +278,6 @@ body {
   line-height: 1.6;
 }
 
-/* CSS Scroll Indicator baru */
 .scroll-indicator {
   position: absolute;
   bottom: 40px;
@@ -353,19 +350,15 @@ body {
   margin: 0 auto;
 }
 
-/* State awal cards, disembunyikan saat belum di-scroll */
 #home-tools-container .card {
   opacity: 0;
 }
 
-/* Animasi akan ter-trigger dan mengatur efek hover dasar tetap ada */
 #home-tools-container.animate-in .card {
   opacity: 1;
-  /* Kata 'backwards' memastikan elemen tetap invisible dari frame ke-0 saat animasi delay berjalan */
   animation: popSlideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
 }
 
-/* Animasi delay untuk masing-masing grid (muncul satu-satu serempak) */
 #home-tools-container.animate-in .grid > div:nth-child(1) {
   animation-delay: 0.05s;
 }
@@ -403,7 +396,6 @@ body {
   animation-delay: 0.6s;
 }
 
-/* --- GRID & KARTU BAWAAN YANG TETAP DIPERTAHANKAN --- */
 .category-header {
   display: flex;
   align-items: center;
@@ -1141,15 +1133,12 @@ body {
   justify-content: center;
 }
 
-/* --- KARTU KOMPRESI (COMPRESS MODAL) --- */
-
-/* Memperlebar modal khusus kompresi agar cukup untuk layout menyamping */
+/* --- 12. MODAL KHUSUS: KARTU KOMPRESI --- */
 .compress-modal-wide {
   width: 680px;
   max-width: 95vw;
 }
 
-/* Flexbox untuk mensejajarkan dropzone dan radio buttons */
 .compress-layout-grid {
   display: flex;
   gap: 20px;
@@ -1157,14 +1146,13 @@ body {
   margin-bottom: 5px;
 }
 
-/* --- PREVIEW GAMBAR COMPRESS --- */
 .compress-layout-grid .file-dropzone {
   flex: 1;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center; /* Memastikan isi dropzone selalu di tengah */
+  align-items: center;
 }
 
 .dropzone-preview {
@@ -1179,7 +1167,7 @@ body {
 }
 
 .compress-options-container {
-  flex: 1.2; /* Diberi ruang sedikit lebih besar agar teks tidak terpotong */
+  flex: 1.2;
   display: flex;
   flex-direction: column;
 }
@@ -1243,7 +1231,7 @@ body {
   color: var(--text-light);
 }
 
-/* --- 12. MODAL KHUSUS: EDITOR STUDIO (TANDA TANGAN & TEKS) --- */
+/* --- 13. MODAL KHUSUS: EDITOR STUDIO (TANDA TANGAN & TEKS) --- */
 .xl-modal {
   width: 98%;
   max-width: 1500px;
@@ -1306,11 +1294,13 @@ body {
   background: white;
   border: 1px solid #d1d5db;
 }
+
 .target-label {
   font-size: 0.85rem;
   font-weight: 500;
   color: #4b5563;
 }
+
 .target-input {
   width: 90px;
   text-align: center;
@@ -1321,6 +1311,7 @@ body {
   color: var(--text-dark);
   outline: none;
 }
+
 .target-input:focus {
   border-color: var(--primary);
 }
@@ -1447,8 +1438,354 @@ body {
   cursor: pointer;
 }
 
-/* --- 13. NOTIFIKASI & ANIMASI --- */
+/* --- 14. MODAL KHUSUS: FEATURE WORKSPACE (MERGE, SPLIT, DLL) --- */
+.workspace-feature-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.2s ease-out forwards;
+}
 
+.workspace-feature-modal {
+  width: 95vw;
+  height: 90vh;
+  background: #fdfdfd;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  position: relative;
+  animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.btn-close-workspace-right {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 20;
+  color: #9ca3af;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-close-workspace-right:hover {
+  background: #f3f4f6;
+  color: #374151;
+  transform: rotate(90deg);
+}
+
+.merge-workspace-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.merge-preview-area {
+  flex: 1;
+  padding: 80px 40px 40px;
+  background-color: #f7f9fc;
+  overflow-y: auto;
+  position: relative;
+}
+
+.merge-info-alert {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #bae6fd;
+  line-height: 1.4;
+}
+
+.merge-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+}
+
+.merge-item {
+  width: 170px;
+  height: 230px;
+  background: white;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  cursor: grab;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  overflow: visible;
+}
+
+.merge-item:active {
+  cursor: grabbing;
+}
+
+.merge-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+}
+
+.merge-item.dragging {
+  opacity: 0.5;
+  border: 2px dashed var(--primary);
+  background: #f0f8ff;
+}
+
+.merge-item-tooltip {
+  position: absolute;
+  top: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #4b5563;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    top 0.2s;
+  z-index: 10;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  min-width: 140px;
+  text-align: center;
+}
+
+.merge-item-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #4b5563 transparent transparent transparent;
+}
+
+.merge-item:hover .merge-item-tooltip {
+  opacity: 1;
+  top: -50px;
+}
+
+.btn-remove-item {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 26px;
+  height: 26px;
+  background: white;
+  color: #ef4444;
+  border: 1px solid #fca5a5;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.merge-item:hover .btn-remove-item {
+  opacity: 1;
+}
+
+.btn-remove-item:hover {
+  background: #fee2e2;
+  transform: scale(1.1);
+}
+
+.merge-item-thumbnail {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background-color: #f9fafb;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.merge-item-thumbnail img {
+  width: 60px;
+  height: 60px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.pdf-iframe-preview {
+  width: 100%;
+  height: 100%;
+  border: none;
+  pointer-events: none;
+  user-select: none;
+  object-fit: cover;
+}
+
+.preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  cursor: grab;
+}
+
+.merge-item:active .preview-overlay {
+  cursor: grabbing;
+}
+
+.merge-item-name {
+  padding: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #374151;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-top: 1px solid #e5e7eb;
+}
+
+.merge-add-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+}
+
+.btn-add-circle {
+  width: 60px;
+  height: 60px;
+  background: var(--primary) !important;
+  color: white;
+  border-radius: 50%;
+  font-size: 2.5rem;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 120, 215, 0.4) !important;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+
+.btn-add-circle:hover {
+  transform: scale(1.1);
+  background: var(--primary-dark) !important;
+}
+
+.icon-plus-center {
+  width: 32px;
+  height: 32px;
+  filter: brightness(0) invert(1);
+  display: block;
+}
+
+.merge-action-sidebar {
+  width: 340px;
+  background: white;
+  border-left: 1px solid #e5e7eb;
+  padding: 50px 30px 40px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 15px rgba(0, 0, 0, 0.03);
+  z-index: 5;
+  position: relative;
+}
+
+.merge-action-sidebar h2 {
+  font-size: 1.8rem;
+  color: var(--text-dark);
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: 800;
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+.btn-action-big {
+  background: var(--primary) !important;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 20px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 20px rgba(0, 120, 215, 0.3) !important;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.btn-action-big:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 25px rgba(0, 120, 215, 0.4) !important;
+  background: var(--primary-dark) !important;
+}
+
+.btn-action-big:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.icon-merge-btn {
+  width: 24px;
+  height: 24px;
+  margin-left: 10px;
+  filter: brightness(0) invert(1);
+  display: block;
+}
+
+/* --- 15. NOTIFIKASI & ANIMASI --- */
 #notif-title {
   font-size: 1.3rem;
   margin-bottom: 10px;
@@ -1499,6 +1836,46 @@ body {
   animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
 }
 
+.error-animation {
+  margin: 0 auto 15px auto;
+  width: 60px;
+  height: 60px;
+}
+
+.crossmark {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 3;
+  stroke: #fff;
+  stroke-miterlimit: 10;
+  box-shadow: inset 0px 0px 0px var(--danger);
+  animation:
+    fill-red 0.4s ease-in-out 0.4s forwards,
+    scale 0.3s ease-in-out 0.9s both;
+}
+
+.crossmark__circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 3;
+  stroke-miterlimit: 10;
+  stroke: var(--danger);
+  fill: none;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.crossmark__path {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke: #fff;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
 @keyframes stroke {
   100% {
     stroke-dashoffset: 0;
@@ -1521,6 +1898,12 @@ body {
   }
 }
 
+@keyframes fill-red {
+  100% {
+    box-shadow: inset 0px 0px 0px 30px var(--danger);
+  }
+}
+
 @keyframes popIn {
   0% {
     transform: scale(0.5);
@@ -1532,7 +1915,27 @@ body {
   }
 }
 
-/* --- 14. OVERLAY DRAG & DROP FILE DARI OS --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popUp {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- 16. OVERLAY DRAG & DROP FILE DARI OS --- */
 .dropzone-overlay {
   position: fixed;
   top: 0;
@@ -1594,13 +1997,7 @@ body {
   }
 }
 
-/* --- 15. SKELETON LOADER & PROGRESS BAR --- */
-.page-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  background-color: transparent !important;
-}
-
+/* --- 17. SKELETON LOADER & PROGRESS BAR --- */
 .skeleton-box {
   background-color: white;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -1627,8 +2024,8 @@ body {
     transparent
   );
   animation: shimmer 1.5s infinite;
-  z-index: 10; /* <--- PERBAIKAN DI SINI AGAR BERADA DI ATAS WARNA ABU-ABU */
-  pointer-events: none; /* <--- CEGAH BLOCKING KLIK */
+  z-index: 10;
+  pointer-events: none;
 }
 
 @keyframes shimmer {
@@ -1707,19 +2104,270 @@ body {
   }
 }
 
-/* --- 16. KELAS UTILITAS & SPESIFIK (TERMASUK YANG SEBELUMNYA INLINE) --- */
+/* --- 18. TAB SYSTEM & DATA TABLE --- */
+.data-tabs-container {
+  display: flex;
+  height: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.data-tabs-sidebar {
+  width: 250px;
+  background: #f9fafb;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+}
+
+.data-tab-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 14px 18px;
+  border: none;
+  background: none;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-dark);
+  transition: background-color 0.2s;
+}
+
+.data-tab-btn:hover {
+  background: #f3f4f6;
+}
+
+.data-tab-btn.active {
+  background: #ffffff;
+  border-left: 4px solid var(--primary);
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+.data-tab-content-area {
+  flex: 1;
+  background: #ffffff;
+  padding: 25px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.data-tab-pane {
+  display: none;
+}
+
+.data-tab-pane.active {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.data-pane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.data-pane-header h4 {
+  margin: 0;
+  color: var(--primary-dark);
+  font-size: 1.25rem;
+}
+
+.row-count-badge {
+  background: #e0f2fe;
+  color: var(--primary-dark);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.data-table-wrapper {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.lunpia-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.lunpia-data-table th {
+  background: #f8f9fa;
+  color: #374151;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-bottom: 2px solid #d1d5db;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.lunpia-data-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.lunpia-data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.lunpia-data-table tbody tr:hover {
+  background-color: #f0f8ff;
+}
+
+.null-val {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.empty-row {
+  text-align: center;
+  color: #6b7280;
+  padding: 30px !important;
+  font-style: italic;
+}
+
+.row-limit-notice {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #ef4444;
+  text-align: right;
+  font-style: italic;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 5px;
+  background-color: #ffffff;
+  min-width: 130px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.dropdown-content button {
+  color: #374151;
+  padding: 10px 14px;
+  text-decoration: none;
+  display: block;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.dropdown-content button:hover {
+  background-color: #f0f8ff;
+  color: var(--primary-dark);
+}
+
+.dropdown:hover .dropdown-content,
+.dropdown:focus-within .dropdown-content {
+  display: block;
+}
+
+/* --- 19. PERMISSIONS BANNER & LIST (ADD-ONS) --- */
+.permission-banner {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 12px 25px;
+  border-bottom: 1px solid #ffeeba;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.permission-banner span {
+  font-weight: 500;
+}
+
+.permission-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  line-height: 2;
+  font-size: 0.95rem;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.permission-icon {
+  font-weight: bold;
+  width: 20px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.perm-yes {
+  color: #28a745;
+}
+
+.perm-no {
+  color: #dc3545;
+}
+
+/* --- 20. KELAS UTILITAS & SPESIFIK --- */
 .mt-30 {
   margin-top: 30px !important;
 }
+
 .mb-0 {
   margin-bottom: 0 !important;
 }
+
 .mb-15 {
   margin-bottom: 15px !important;
 }
+
 .d-none {
-  display: none !important; /* Tambahkan !important di sini */
+  display: none !important;
 }
+
 .icon-dark {
   filter: brightness(0.2) !important;
 }
@@ -1728,6 +2376,7 @@ body {
   padding: 4px 12px;
   font-weight: bold;
 }
+
 .btn-sm-pad {
   padding: 4px 12px;
 }
@@ -1800,7 +2449,6 @@ body {
   width: 32px;
   height: 32px;
   margin-bottom: 5px;
-  /* Filter ini akan mengubah warna dasar hitam SVG menjadi warna var(--primary) */
   filter: brightness(0) saturate(100%) invert(32%) sepia(97%) saturate(2135%)
     hue-rotate(188deg) brightness(95%) contrast(101%);
 }
@@ -1835,162 +2483,8 @@ body {
   margin-top: 8px;
 }
 
-/* --- TAB SYSTEM & PROPER TABLE FOR DATA STRUCTURE --- */
-.data-tabs-container {
-  display: flex;
-  height: 100%;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #ffffff;
-}
-
-.data-tabs-sidebar {
-  width: 250px;
-  background: #f9fafb;
-  border-right: 1px solid #e5e7eb;
-  overflow-y: auto;
-}
-
-.data-tab-btn {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 14px 18px;
-  border: none;
-  background: none;
-  border-bottom: 1px solid #e5e7eb;
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-dark);
-  transition: background-color 0.2s;
-}
-
-.data-tab-btn:hover {
-  background: #f3f4f6;
-}
-
-.data-tab-btn.active {
-  background: #ffffff;
-  border-left: 4px solid var(--primary);
-  color: var(--primary-dark);
-  font-weight: 700;
-}
-
-.data-tab-content-area {
-  flex: 1;
-  background: #ffffff;
-  padding: 25px;
-  overflow: hidden;
-  /* Tambahkan Flexbox di parent area */
-  display: flex;
-  flex-direction: column;
-}
-
-.data-tab-pane {
-  display: none;
-}
-
-.data-tab-pane.active {
-  /* Ubah menjadi flex column agar isi tabel bisa mengisi sisa layar responsif */
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-  /* Animasi popIn bisa kamu nyalakan jika tidak bentrok dengan flex */
-  /* animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); */
-}
-
-.data-pane-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #f3f4f6;
-  flex-shrink: 0; /* Pastikan Header tidak tertekan (menyusut) */
-}
-
-.data-pane-header h4 {
-  margin: 0;
-  color: var(--primary-dark);
-  font-size: 1.25rem;
-}
-
-.row-count-badge {
-  background: #e0f2fe;
-  color: var(--primary-dark);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: bold;
-}
-
-.data-table-wrapper {
-  flex: 1; /* Otomatis mengambil tepat SISA ruang antara Header dan Pagination */
-  overflow: auto; /* Scroll bar hanya muncul di kotak ini */
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.lunpia-data-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.lunpia-data-table th {
-  background: #f8f9fa;
-  color: #374151;
-  font-weight: 600;
-  padding: 12px 16px;
-  border-bottom: 2px solid #d1d5db;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.lunpia-data-table td {
-  padding: 10px 16px;
-  border-bottom: 1px solid #f3f4f6;
-  color: #4b5563;
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-.lunpia-data-table tbody tr {
-  transition: background-color 0.15s ease;
-}
-
-.lunpia-data-table tbody tr:hover {
-  background-color: #f0f8ff;
-}
-
-.null-val {
-  color: #9ca3af;
-  font-style: italic;
-  font-size: 0.85rem;
-}
-
-.empty-row {
-  text-align: center;
-  color: #6b7280;
-  padding: 30px !important;
-  font-style: italic;
-}
-
-.row-limit-notice {
-  margin-top: 10px;
-  font-size: 0.8rem;
-  color: #ef4444;
-  text-align: right;
-  font-style: italic;
+body.modal-active .screen.active {
+  overflow-y: hidden !important;
 }
 
 @keyframes spin {
@@ -2000,149 +2494,4 @@ body {
   100% {
     transform: rotate(360deg);
   }
-}
-
-/* --- DROPDOWN EXPORT BUTTONS --- */
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 5px;
-  background-color: #ffffff;
-  min-width: 130px;
-  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.15);
-  z-index: 100;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-}
-
-.dropdown-content button {
-  color: #374151;
-  padding: 10px 14px;
-  text-decoration: none;
-  display: block;
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
-.dropdown-content button:hover {
-  background-color: #f0f8ff;
-  color: var(--primary-dark);
-}
-
-.dropdown:hover .dropdown-content,
-.dropdown:focus-within .dropdown-content {
-  display: block;
-}
-
-/* --- CEGAH SCROLL HOMEPAGE SAAT MODAL TERBUKA --- */
-body.modal-active .screen.active {
-  overflow-y: hidden !important;
-}
-
-/* --- ANIMASI SILANG MERAH (ERROR / FAILED) --- */
-.error-animation {
-  margin: 0 auto 15px auto;
-  width: 60px;
-  height: 60px;
-}
-
-.crossmark {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: block;
-  stroke-width: 3;
-  stroke: #fff;
-  stroke-miterlimit: 10;
-  box-shadow: inset 0px 0px 0px var(--danger);
-  animation:
-    fill-red 0.4s ease-in-out 0.4s forwards,
-    scale 0.3s ease-in-out 0.9s both;
-}
-
-.crossmark__circle {
-  stroke-dasharray: 166;
-  stroke-dashoffset: 166;
-  stroke-width: 3;
-  stroke-miterlimit: 10;
-  stroke: var(--danger);
-  fill: none;
-  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
-}
-
-.crossmark__path {
-  transform-origin: 50% 50%;
-  stroke-dasharray: 48;
-  stroke-dashoffset: 48;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke: #fff;
-  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
-}
-
-@keyframes fill-red {
-  100% {
-    box-shadow: inset 0px 0px 0px 30px var(--danger);
-  }
-}
-
-/* --- 17. PERMISSIONS BANNER & LIST (ADD-ONS) --- */
-.permission-banner {
-  background-color: #fff3cd;
-  color: #856404;
-  padding: 12px 25px;
-  border-bottom: 1px solid #ffeeba;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.permission-banner span {
-  font-weight: 500;
-}
-
-.permission-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  line-height: 2;
-  font-size: 0.95rem;
-}
-
-.permission-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
-}
-
-.permission-icon {
-  font-weight: bold;
-  width: 20px;
-  text-align: center;
-  font-size: 1.1rem;
-}
-
-.perm-yes {
-  color: #28a745;
-}
-.perm-no {
-  color: #dc3545;
 }
