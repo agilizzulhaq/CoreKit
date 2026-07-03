@@ -1,6 +1,5 @@
-// frontend/src/components/Workspace.jsx
 import { useRef, useState, useEffect } from "react";
-import { mergeDocuments } from "../api";
+import { mergeDocuments, uploadDocument, API_URL } from "../api";
 
 export default function Workspace({
   activeModal,
@@ -166,20 +165,50 @@ function MergeWorkspace({ files, setFiles, closeModal }) {
 
     setIsProcessing(true);
     try {
-      const mergedBlob = await mergeDocuments(files);
+      // 1. Upload semua file biner satu per satu ke server
+      const uploadedFiles = [];
+      for (const file of files) {
+        const uploadRes = await uploadDocument(file);
 
-      const url = window.URL.createObjectURL(mergedBlob);
+        // Ambil doc_id dari engineState yang diberikan Gateway
+        const actualDocId = uploadRes.engineState?.doc_id;
+
+        if (!actualDocId) {
+          throw new Error(
+            `Gagal mendapatkan doc_id dari server untuk file: ${file.name}`,
+          );
+        }
+
+        // Kita "mengakali" api.js dengan memasukkan doc_id ke dalam kunci path
+        uploadedFiles.push({ path: actualDocId });
+      }
+
+      // 2. Eksekusi merge dengan array of paths dari server
+      const result = await mergeDocuments(uploadedFiles);
+
+      const savePath = window.prompt(
+        "Simpan hasil merge sebagai:",
+        "LUNPIA_Merged_Result.pdf",
+      );
+      if (!savePath) return;
+
+      const downloadUrl = `${API_URL}/doc/download/${result.doc_id}?filename=${encodeURIComponent(savePath)}`;
+
+      // Membuat elemen <a> secara tidak kasat mata untuk men-trigger download
       const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", "LUNPIA_Merged_Result.pdf");
+      link.href = downloadUrl;
       document.body.appendChild(link);
       link.click();
-      link.parentNode.removeChild(link);
+      link.remove(); // Hapus elemen setelah diklik agar DOM tetap bersih
 
-      alert("PDF Berhasil digabungkan!");
+      alert(
+        "PDF berhasil digabungkan dan sedang diunduh ke folder Downloads Anda!",
+      );
     } catch (error) {
       console.error(error);
-      alert("Terjadi kesalahan sistem saat menggabungkan PDF.");
+      alert(
+        error.message || "Terjadi kesalahan sistem saat menggabungkan PDF.",
+      );
     } finally {
       setIsProcessing(false);
     }

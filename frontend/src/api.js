@@ -26,17 +26,27 @@ export async function closeDocumentApi(docId) {
 }
 
 export async function mergeDocuments(files) {
-  const formData = new FormData();
-  // Append semua file ke dalam key 'files' (sesuaikan dengan parameter backend)
-  files.forEach((file) => formData.append("files", file));
+  const paths = files.map((f) => f.path);
 
-  const response = await fetch(`${API_URL}/pdf/merge`, {
+  const response = await fetch(`${API_URL}/tools/merge`, {
     method: "POST",
-    body: formData,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files: paths }),
   });
 
-  if (!response.ok) throw new Error("Gagal melakukan merge PDF");
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal melakukan merge PDF";
 
-  // Karena output berupa file PDF, kita ambil sebagai Blob
-  return await response.blob();
+    // Penanganan khusus untuk error 422 (array of objects) dari FastAPI
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
 }

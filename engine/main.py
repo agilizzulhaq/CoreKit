@@ -1,4 +1,3 @@
-# engine\main.py
 import fitz
 import io
 import os
@@ -368,6 +367,25 @@ def save_pdf_as_image(data: SaveImageReq):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/doc/download/{doc_id}")
+def download_pdf_stream(doc_id: str, filename: str = "document.pdf"):
+    session = active_sessions.get(doc_id)
+    if not session: 
+        raise HTTPException(status_code=400, detail="Invalid Document ID")
+    
+    try:
+        # Ambil hasil manipulasi PDF dari memori menjadi bytes
+        pdf_bytes = session.doc.tobytes(garbage=3, deflate=True)
+        
+        # Kirim kembali ke browser sebagai file attachment untuk di-download
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/doc/undo")
 def undo_action(data: BaseDocReq):
     session = active_sessions.get(data.doc_id)
@@ -436,7 +454,10 @@ def merge_pdf(data: MergeReq):
             start_idx = data.insert_page if data.insert_mode == "custom" and data.insert_page >= 0 else -1
             
             for f in data.files:
-                src_doc = fitz.open(f)
+                # [PERUBAHAN] Ambil path asli dari memory jika 'f' adalah doc_id
+                target_path = doc_filepaths.get(f, f)
+                src_doc = fitz.open(target_path)
+                
                 if src_doc.needs_pass:
                     pwd = data.passwords.get(f, "") if data.passwords else ""
                     if not src_doc.authenticate(pwd):
@@ -460,7 +481,10 @@ def merge_pdf(data: MergeReq):
         else:
             new_doc = fitz.open()
             for f in data.files: 
-                src_doc = fitz.open(f)
+                # [PERUBAHAN] Ambil path asli dari memory jika 'f' adalah doc_id
+                target_path = doc_filepaths.get(f, f)
+                src_doc = fitz.open(target_path)
+                
                 if src_doc.needs_pass:
                     pwd = data.passwords.get(f, "") if data.passwords else ""
                     if not src_doc.authenticate(pwd):
