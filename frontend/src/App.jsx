@@ -11,30 +11,23 @@ function App() {
     "All rights reserved © LUNPIA 2026",
   );
 
-  // State baru untuk fitur spesifik
   const [activeModal, setActiveModal] = useState(null);
   const [featureFiles, setFeatureFiles] = useState([]);
 
   const mergeFileInputRef = useRef(null);
   const filesToPdfInputRef = useRef(null);
-
-  // Trigger input file khusus untuk Merge (Bisa multiple files)
-  const triggerMergeUpload = () => {
-    if (mergeFileInputRef.current) mergeFileInputRef.current.click();
-  };
+  const rotateFileInputRef = useRef(null);
 
   const triggerFilesToPdfUpload = () => {
     if (filesToPdfInputRef.current) filesToPdfInputRef.current.click();
   };
 
-  const handleMergeFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      setFeatureFiles(files);
-      setActiveModal("merge");
-      setStatusMsg(`Memilih ${files.length} file untuk digabungkan`);
-    }
-    e.target.value = null; // Reset input
+  const triggerRotateUpload = () => {
+    if (rotateFileInputRef.current) rotateFileInputRef.current.click();
+  };
+
+  const triggerMergeUpload = () => {
+    if (mergeFileInputRef.current) mergeFileInputRef.current.click();
   };
 
   const handleFilesToPdfChange = (e) => {
@@ -45,6 +38,26 @@ function App() {
       setStatusMsg(`Memilih ${files.length} file untuk dikonversi ke PDF`);
     }
     e.target.value = null;
+  };
+
+  const handleRotateFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("rotate");
+      setStatusMsg(`Memilih ${files[0].name} untuk diputar`);
+    }
+    e.target.value = null;
+  };
+
+  const handleMergeFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("merge");
+      setStatusMsg(`Memilih ${files.length} file untuk digabungkan`);
+    }
+    e.target.value = null; // Reset input
   };
 
   const handleCloseModal = () => {
@@ -78,6 +91,14 @@ function App() {
           <input
             type="file"
             accept="application/pdf"
+            ref={rotateFileInputRef}
+            onChange={handleRotateFileChange}
+            style={{ display: "none" }}
+          />
+
+          <input
+            type="file"
+            accept="application/pdf"
             multiple
             ref={mergeFileInputRef}
             onChange={handleMergeFileChange}
@@ -90,6 +111,7 @@ function App() {
             setActiveMenu={setActiveMenu}
             triggerMergeUpload={triggerMergeUpload}
             triggerFilesToPdfUpload={triggerFilesToPdfUpload}
+            triggerRotateUpload={triggerRotateUpload}
           />
 
           <Workspace

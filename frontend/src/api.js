@@ -50,6 +50,29 @@ export async function filesToPdf(files) {
   return await response.json();
 }
 
+export async function rotateDocument(docId, pages, angle) {
+  const response = await fetch(`${API_URL}/tools/rotate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ doc_id: docId, pages, angle }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal memutar halaman PDF";
+
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}
+
 export async function mergeDocuments(files) {
   const paths = files.map((f) => f.path);
 
