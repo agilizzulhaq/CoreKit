@@ -140,7 +140,10 @@ class QRScanReq(BaseModel): image_b64: str
 class OpenLinkReq(BaseModel): url: str
 class FilesToPdfReq(BaseModel): files: List[str]; output_path: Optional[str] = None
 class FileInfoReq(BaseModel): path: str; doc_id: Optional[str] = None
-class CompressReq(BaseModel): input_path: str; output_path: str; mode: str; doc_id: Optional[str] = None; password: Optional[str] = None
+class CompressReq(BaseModel):
+    doc_id: str
+    mode: str
+    password: Optional[str] = None
 class SqlReadReq(BaseModel): path: str
 class ExportDataReq(BaseModel): 
     output_path: str; table_name: str; columns: list; rows: list; format: str
@@ -852,16 +855,19 @@ def add_text_to_pdf(data: TextReq):
 
 @app.post("/tools/compress")
 def compress_pdf(data: CompressReq):
+    target_path = doc_filepaths.get(data.doc_id, data.doc_id)
+    if not target_path or not os.path.exists(target_path):
+        raise HTTPException(status_code=400, detail="Invalid Document ID")
     try:
-        doc = fitz.open(data.input_path)
-        
+        doc = fitz.open(target_path)
+
         if doc.needs_pass:
             if not data.password or not doc.authenticate(data.password):
                 raise ValueError("Password missing or incorrect for compression")
-                
+
         if data.mode == "extreme": max_dim, jpeg_quality, garbage_lvl, subsampling = 720, 25, 4, 2
         elif data.mode == "recommended": max_dim, jpeg_quality, garbage_lvl, subsampling = 1200, 50, 4, 1
-        else: max_dim, jpeg_quality, garbage_lvl, subsampling = 2000, 75, 3, 0
+        else: max_dim, jpeg_quality, garbage_lvl, subsampling = 2000, 75, 3, 0  # "less"
 
         processed_xrefs, smask_dict = set(), {}
         for page_num in range(len(doc)):
@@ -893,7 +899,7 @@ def compress_pdf(data: CompressReq):
                     pdf_colorspace = "/DeviceGray" if img_pil.mode == "L" else "/DeviceRGB"
                     if img_pil.size[0] > max_dim or img_pil.size[1] > max_dim:
                         img_pil.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
-                    
+
                     img_byte_arr = io.BytesIO()
                     img_pil.save(img_byte_arr, format="JPEG", quality=jpeg_quality, optimize=True, subsampling=subsampling)
                     new_bytes = img_byte_arr.getvalue()
@@ -905,12 +911,12 @@ def compress_pdf(data: CompressReq):
                         doc.xref_set_key(xref, "BitsPerComponent", "8")
                         doc.xref_set_key(xref, "Width", str(img_pil.size[0]))
                         doc.xref_set_key(xref, "Height", str(img_pil.size[1]))
-                        
+
                         keys_to_remove = ["Decode", "DecodeParms", "ColorTransform"]
                         if not has_smask: keys_to_remove.extend(["SMask", "Mask"])
                         for key in keys_to_remove:
                             if doc.xref_get_key(xref, key)[0] != "null": doc.xref_set_key(xref, key, "null")
-                                
+
                         if has_smask:
                             smask_xref = smask_dict[xref]
                             try:
@@ -925,13 +931,32 @@ def compress_pdf(data: CompressReq):
                             except Exception: pass
                 except Exception: continue
 
-        doc.save(data.output_path, garbage=garbage_lvl, deflate=True, clean=True)
+        original_size = os.path.getsize(target_path)
+        compressed_bytes = doc.tobytes(garbage=garbage_lvl, deflate=True, clean=True)
         doc.close()
-        
-        if os.path.getsize(data.output_path) >= os.path.getsize(data.input_path):
-            shutil.copy(data.input_path, data.output_path)
-            
-        return {"status": "success", "path": data.output_path}
+
+        # Jika hasil kompresi malah lebih besar, gunakan file asli sebagai fallback
+        if len(compressed_bytes) >= original_size:
+            with open(target_path, "rb") as f:
+                compressed_bytes = f.read()
+
+        result_doc_id = str(uuid.uuid4())
+        new_session = DocumentSession(doc_bytes=compressed_bytes)
+        active_sessions[result_doc_id] = new_session
+
+        base_name = os.path.splitext(os.path.basename(target_path))[0]
+        filename = f"{base_name}_compressed.pdf"
+        doc_filepaths[result_doc_id] = filename
+        record_audit(new_session, "Compress PDF", f"Mode: {data.mode}")
+
+        return {
+            "status": "success",
+            "doc_id": result_doc_id,
+            "filename": filename,
+            "total_pages": len(new_session.doc),
+            "original_size_bytes": original_size,
+            "compressed_size_bytes": len(compressed_bytes),
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -125,3 +125,29 @@ export async function mergeDocuments(files) {
 
   return await response.json();
 }
+
+export async function compressDocument(docId, mode, password) {
+  const body = { doc_id: docId, mode };
+  if (password) body.password = password;
+
+  const response = await fetch(`${API_URL}/tools/compress`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal mengompres PDF";
+
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}

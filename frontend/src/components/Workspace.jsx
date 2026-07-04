@@ -3,6 +3,7 @@ import FilesToPdfWorkspace from "./workspace/FilesToPdfWorkspace";
 import RotateWorkspace from "./workspace/RotateWorkspace";
 import SplitWorkspace from "./workspace/SplitWorkspace";
 import MergeWorkspace from "./workspace/MergeWorkspace";
+import CompressWorkspace from "./workspace/CompressWorkspace";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -36,6 +37,8 @@ export default function Workspace({
             closeModal={closeModal}
           />
         );
+      case "compress":
+        return <CompressWorkspace files={files} closeModal={closeModal} />;
       default:
         return (
           <div className="workspace-empty">

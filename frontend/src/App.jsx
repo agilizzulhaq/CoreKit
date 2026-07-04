@@ -14,11 +14,14 @@ function App() {
   const [activeModal, setActiveModal] = useState(null);
   const [featureFiles, setFeatureFiles] = useState([]);
 
+  // REFS for hidden file inputs to trigger file selection dialogs
   const filesToPdfInputRef = useRef(null);
   const rotateFileInputRef = useRef(null);
   const splitFileInputRef = useRef(null);
   const mergeFileInputRef = useRef(null);
+  const compressFileInputRef = useRef(null);
 
+  // Functions to trigger file input clicks for each feature
   const triggerFilesToPdfUpload = () => {
     if (filesToPdfInputRef.current) filesToPdfInputRef.current.click();
   };
@@ -35,6 +38,11 @@ function App() {
     if (mergeFileInputRef.current) mergeFileInputRef.current.click();
   };
 
+  const triggerCompressUpload = () => {
+    if (compressFileInputRef.current) compressFileInputRef.current.click();
+  };
+
+  // Handlers for file input changes to set the selected files and open the corresponding workspace modal
   const handleFilesToPdfChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
@@ -72,7 +80,17 @@ function App() {
       setActiveModal("merge");
       setStatusMsg(`Memilih ${files.length} file untuk digabungkan`);
     }
-    e.target.value = null; // Reset input
+    e.target.value = null;
+  };
+
+  const handleCompressFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("compress");
+      setStatusMsg(`Memilih ${files[0].name} untuk dikompres`);
+    }
+    e.target.value = null;
   };
 
   const handleCloseModal = () => {
@@ -128,14 +146,23 @@ function App() {
             style={{ display: "none" }}
           />
 
+          <input
+            type="file"
+            accept="application/pdf"
+            ref={compressFileInputRef}
+            onChange={handleCompressFileChange}
+            style={{ display: "none" }}
+          />
+
           <Home
             activeScreen={activeScreen}
             activeMenu={activeMenu}
             setActiveMenu={setActiveMenu}
+            triggerMergeUpload={triggerMergeUpload}
             triggerFilesToPdfUpload={triggerFilesToPdfUpload}
             triggerRotateUpload={triggerRotateUpload}
             triggerSplitUpload={triggerSplitUpload}
-            triggerMergeUpload={triggerMergeUpload}
+            triggerCompressUpload={triggerCompressUpload}
           />
 
           <Workspace
