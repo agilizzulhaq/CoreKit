@@ -21,6 +21,7 @@ function App() {
   const mergeFileInputRef = useRef(null);
   const compressFileInputRef = useRef(null);
   const numberingFileInputRef = useRef(null);
+  const protectFileInputRef = useRef(null);
 
   // Functions to trigger file input clicks for each feature
   const triggerFilesToPdfUpload = () => {
@@ -45,6 +46,10 @@ function App() {
 
   const triggerNumberingUpload = () => {
     if (numberingFileInputRef.current) numberingFileInputRef.current.click();
+  };
+
+  const triggerProtectUpload = () => {
+    if (protectFileInputRef.current) protectFileInputRef.current.click();
   };
 
   // Handlers for file input changes to set the selected files and open the corresponding workspace modal
@@ -104,6 +109,16 @@ function App() {
       setFeatureFiles(files);
       setActiveModal("numbering");
       setStatusMsg(`Memilih ${files[0].name} untuk diberi nomor halaman`);
+    }
+    e.target.value = null;
+  };
+
+  const handleProtectFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("protect");
+      setStatusMsg(`Memilih ${files.length} file untuk diberi password`);
     }
     e.target.value = null;
   };
@@ -177,6 +192,15 @@ function App() {
             style={{ display: "none" }}
           />
 
+          <input
+            type="file"
+            accept="application/pdf"
+            multiple
+            ref={protectFileInputRef}
+            onChange={handleProtectFileChange}
+            style={{ display: "none" }}
+          />
+
           <Home
             activeScreen={activeScreen}
             activeMenu={activeMenu}
@@ -187,6 +211,7 @@ function App() {
             triggerSplitUpload={triggerSplitUpload}
             triggerCompressUpload={triggerCompressUpload}
             triggerNumberingUpload={triggerNumberingUpload}
+            triggerProtectUpload={triggerProtectUpload}
           />
 
           <Workspace

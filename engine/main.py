@@ -93,6 +93,7 @@ class DocumentSession:
 active_sessions: dict[str, DocumentSession] = {}
 doc_filepaths: dict[str, str] = {}
 zip_sessions: dict[str, bytes] = {}
+blob_sessions: dict[str, bytes] = {}
 
 
 # ==========================================
@@ -133,6 +134,12 @@ class SignReq(BaseDocReq): page_num: int; image_b64: str; norm_x: float; norm_y:
 class AutoSignReq(BaseDocReq): pages: str; image_b64: str; norm_x: float; norm_y: float; norm_w: float; norm_h: float; remove_bg: bool
 class TextReq(BaseDocReq): page_num: int; text: str; font_size: int; color_hex: str; norm_x: float; norm_y: float; norm_w: float; norm_h: float
 class ProtectReq(BaseDocReq): password: str; output_path: str
+class ProtectBatchItem(BaseModel):
+    doc_id: str
+    filename: Optional[str] = None
+class ProtectBatchReq(BaseModel):
+    files: List[ProtectBatchItem]
+    password: str
 class LockReq(BaseDocReq): output_path: str
 class OpenFolderReq(BaseModel): path: str
 class QRCodeReq(BaseModel): link: str; with_logo: bool; output_path: str
@@ -421,6 +428,17 @@ def download_zip(zip_id: str, filename: str = "CoreKit-Split-Results.zip"):
     return StreamingResponse(
         io.BytesIO(zip_bytes),
         media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+@app.get("/doc/download_blob/{blob_id}")
+def download_blob(blob_id: str, filename: str = "document.pdf"):
+    blob_bytes = blob_sessions.pop(blob_id, None)
+    if blob_bytes is None:
+        raise HTTPException(status_code=400, detail="Invalid Blob ID")
+    return StreamingResponse(
+        io.BytesIO(blob_bytes),
+        media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
@@ -1003,6 +1021,71 @@ def protect_pdf(data: ProtectReq):
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/security/protect_batch")
+def protect_pdf_batch(data: ProtectBatchReq):
+    try:
+        if not data.files:
+            raise ValueError("Tidak ada file yang dipilih")
+        if not data.password:
+            raise ValueError("Password tidak boleh kosong")
+
+        results = []
+        for item in data.files:
+            session = active_sessions.get(item.doc_id)
+            if not session:
+                raise ValueError(f"Invalid Document ID: {item.doc_id}")
+
+            encrypted_bytes = session.doc.tobytes(
+                encryption=fitz.PDF_ENCRYPT_AES_256,
+                user_pw=data.password,
+                owner_pw=data.password,
+                garbage=3,
+                deflate=True,
+            )
+            record_audit(session, "Password Protection")
+
+            base_name = item.filename or doc_filepaths.get(item.doc_id, "Protected_Document.pdf")
+            if not base_name.lower().endswith(".pdf"):
+                base_name += ".pdf"
+            results.append((base_name, encrypted_bytes))
+
+        if len(results) == 1:
+            filename, file_bytes = results[0]
+            blob_id = str(uuid.uuid4())
+            blob_sessions[blob_id] = file_bytes
+            return {
+                "status": "success",
+                "mode": "single",
+                "blob_id": blob_id,
+                "filename": filename,
+                "file_count": 1,
+            }
+        else:
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+                used_names = set()
+                for filename, file_bytes in results:
+                    final_name = filename
+                    counter = 1
+                    while final_name in used_names:
+                        name_part, ext = os.path.splitext(filename)
+                        final_name = f"{name_part}_{counter}{ext}"
+                        counter += 1
+                    used_names.add(final_name)
+                    zipf.writestr(final_name, file_bytes)
+
+            zip_id = str(uuid.uuid4())
+            zip_sessions[zip_id] = zip_buffer.getvalue()
+            return {
+                "status": "success",
+                "mode": "zip",
+                "zip_id": zip_id,
+                "filename": "CoreKit-Protected-Results.zip",
+                "file_count": len(results),
+            }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/security/lock")
 def lock_pdf(data: LockReq):

@@ -5,6 +5,7 @@ import SplitWorkspace from "./workspace/SplitWorkspace";
 import MergeWorkspace from "./workspace/MergeWorkspace";
 import CompressWorkspace from "./workspace/CompressWorkspace";
 import PageNumberingWorkspace from "./workspace/PageNumberingWorkspace";
+import PasswordProtectionWorkspace from "./workspace/PasswordProtectionWorkspace";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -42,6 +43,14 @@ export default function Workspace({
         return <CompressWorkspace files={files} closeModal={closeModal} />;
       case "numbering":
         return <PageNumberingWorkspace files={files} closeModal={closeModal} />;
+      case "protect":
+        return (
+          <PasswordProtectionWorkspace
+            files={files}
+            setFiles={setFiles}
+            closeModal={closeModal}
+          />
+        );
       default:
         return (
           <div className="workspace-empty">

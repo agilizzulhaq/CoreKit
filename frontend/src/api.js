@@ -174,3 +174,26 @@ export async function numberPages(docId, options) {
 
   return await response.json();
 }
+
+export async function protectDocuments(fileEntries, password) {
+  const response = await fetch(`${API_URL}/security/protect_batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files: fileEntries, password }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal memberikan password pada PDF";
+
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}
