@@ -73,6 +73,33 @@ export async function rotateDocument(docId, pages, angle) {
   return await response.json();
 }
 
+export async function splitDocument(docId, mode, pages, perPage) {
+  const body = { doc_id: docId, mode };
+  if (mode === "custom") body.pages = pages;
+  if (mode === "fixed") body.per_page = perPage;
+
+  const response = await fetch(`${API_URL}/tools/split`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal memisahkan PDF";
+
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}
+
 export async function mergeDocuments(files) {
   const paths = files.map((f) => f.path);
 
@@ -87,6 +114,32 @@ export async function mergeDocuments(files) {
     let errorMessage = "Gagal melakukan merge PDF";
 
     // Penanganan khusus untuk error 422 (array of objects) dari FastAPI
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}
+
+export async function compressDocument(docId, mode, password) {
+  const body = { doc_id: docId, mode };
+  if (password) body.password = password;
+
+  const response = await fetch(`${API_URL}/tools/compress`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal mengompres PDF";
+
     if (Array.isArray(err.detail)) {
       errorMessage = err.detail.map((e) => e.msg).join(", ");
     } else if (err.detail) {

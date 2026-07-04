@@ -16,6 +16,8 @@ export default function Home({
   triggerFilesToPdfUpload,
   triggerRotateUpload,
   triggerMergeUpload,
+  triggerSplitUpload,
+  triggerCompressUpload,
 }) {
   const toolsRef = useRef(null);
   const heroRef = useRef(null);
@@ -159,10 +161,7 @@ export default function Home({
               </div>
             </div>
 
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Split PDF")}
-            >
+            <div className="card" onClick={triggerSplitUpload}>
               <div className="card-icon">
                 <img src="/assets/scissors.svg" alt="Split PDF" />
               </div>
@@ -183,10 +182,7 @@ export default function Home({
               </div>
             </div>
 
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Compress PDF")}
-            >
+            <div className="card" onClick={triggerCompressUpload}>
               <div className="card-icon">
                 <img
                   src="/assets/file-earmark-zip-fill.svg"

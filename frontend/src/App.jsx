@@ -14,10 +14,14 @@ function App() {
   const [activeModal, setActiveModal] = useState(null);
   const [featureFiles, setFeatureFiles] = useState([]);
 
-  const mergeFileInputRef = useRef(null);
+  // REFS for hidden file inputs to trigger file selection dialogs
   const filesToPdfInputRef = useRef(null);
   const rotateFileInputRef = useRef(null);
+  const splitFileInputRef = useRef(null);
+  const mergeFileInputRef = useRef(null);
+  const compressFileInputRef = useRef(null);
 
+  // Functions to trigger file input clicks for each feature
   const triggerFilesToPdfUpload = () => {
     if (filesToPdfInputRef.current) filesToPdfInputRef.current.click();
   };
@@ -26,10 +30,19 @@ function App() {
     if (rotateFileInputRef.current) rotateFileInputRef.current.click();
   };
 
+  const triggerSplitUpload = () => {
+    if (splitFileInputRef.current) splitFileInputRef.current.click();
+  };
+
   const triggerMergeUpload = () => {
     if (mergeFileInputRef.current) mergeFileInputRef.current.click();
   };
 
+  const triggerCompressUpload = () => {
+    if (compressFileInputRef.current) compressFileInputRef.current.click();
+  };
+
+  // Handlers for file input changes to set the selected files and open the corresponding workspace modal
   const handleFilesToPdfChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
@@ -50,6 +63,16 @@ function App() {
     e.target.value = null;
   };
 
+  const handleSplitFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("split");
+      setStatusMsg(`Memilih ${files[0].name} untuk dipisahkan`);
+    }
+    e.target.value = null;
+  };
+
   const handleMergeFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
@@ -57,7 +80,17 @@ function App() {
       setActiveModal("merge");
       setStatusMsg(`Memilih ${files.length} file untuk digabungkan`);
     }
-    e.target.value = null; // Reset input
+    e.target.value = null;
+  };
+
+  const handleCompressFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("compress");
+      setStatusMsg(`Memilih ${files[0].name} untuk dikompres`);
+    }
+    e.target.value = null;
   };
 
   const handleCloseModal = () => {
@@ -99,9 +132,25 @@ function App() {
           <input
             type="file"
             accept="application/pdf"
+            ref={splitFileInputRef}
+            onChange={handleSplitFileChange}
+            style={{ display: "none" }}
+          />
+
+          <input
+            type="file"
+            accept="application/pdf"
             multiple
             ref={mergeFileInputRef}
             onChange={handleMergeFileChange}
+            style={{ display: "none" }}
+          />
+
+          <input
+            type="file"
+            accept="application/pdf"
+            ref={compressFileInputRef}
+            onChange={handleCompressFileChange}
             style={{ display: "none" }}
           />
 
@@ -112,6 +161,8 @@ function App() {
             triggerMergeUpload={triggerMergeUpload}
             triggerFilesToPdfUpload={triggerFilesToPdfUpload}
             triggerRotateUpload={triggerRotateUpload}
+            triggerSplitUpload={triggerSplitUpload}
+            triggerCompressUpload={triggerCompressUpload}
           />
 
           <Workspace

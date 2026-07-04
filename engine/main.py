@@ -92,6 +92,7 @@ class DocumentSession:
 
 active_sessions: dict[str, DocumentSession] = {}
 doc_filepaths: dict[str, str] = {}
+zip_sessions: dict[str, bytes] = {}
 
 
 # ==========================================
@@ -108,7 +109,10 @@ class PageReq(BaseDocReq): page_num: int
 class MoveToReq(BaseDocReq): page_num: int; target_page: int
 class DeleteReq(BaseDocReq): mode: str; page_num: int = 0; pages: str = ""
 class RotateReq(BaseDocReq): pages: str; angle: int
-class SplitReq(BaseDocReq): mode: str; pages: str = ""; per_page: int = 1; output_dir: str
+class SplitReq(BaseDocReq):
+    mode: str
+    pages: str = ""
+    per_page: int = 1
 class MergeReq(BaseModel): 
     files: List[str]
     passwords: Optional[dict] = None
@@ -136,7 +140,10 @@ class QRScanReq(BaseModel): image_b64: str
 class OpenLinkReq(BaseModel): url: str
 class FilesToPdfReq(BaseModel): files: List[str]; output_path: Optional[str] = None
 class FileInfoReq(BaseModel): path: str; doc_id: Optional[str] = None
-class CompressReq(BaseModel): input_path: str; output_path: str; mode: str; doc_id: Optional[str] = None; password: Optional[str] = None
+class CompressReq(BaseModel):
+    doc_id: str
+    mode: str
+    password: Optional[str] = None
 class SqlReadReq(BaseModel): path: str
 class ExportDataReq(BaseModel): 
     output_path: str; table_name: str; columns: list; rows: list; format: str
@@ -406,6 +413,17 @@ def download_pdf_stream(doc_id: str, filename: str = "document.pdf"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/doc/download_zip/{zip_id}")
+def download_zip(zip_id: str, filename: str = "CoreKit-Split-Results.zip"):
+    zip_bytes = zip_sessions.pop(zip_id, None)
+    if zip_bytes is None:
+        raise HTTPException(status_code=400, detail="Invalid Zip ID")
+    return StreamingResponse(
+        io.BytesIO(zip_bytes),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
 @app.post("/doc/undo")
 def undo_action(data: BaseDocReq):
     session = active_sessions.get(data.doc_id)
@@ -543,37 +561,85 @@ def merge_pdf(data: MergeReq):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# Replace the whole /tools/split endpoint with:
 @app.post("/tools/split")
 def split_pdf(data: SplitReq):
     session = active_sessions.get(data.doc_id)
     if not session: raise HTTPException(status_code=400, detail="Invalid Document ID")
     try:
+        total = len(session.doc)
+
         if data.mode == "custom":
+            targets = sorted(parse_page_string(data.pages, total))
+            if not targets: raise ValueError("No valid pages selected")
+
             new_doc = fitz.open()
-            parts = data.pages.split(',')
-            for part in parts:
-                part = part.strip()
-                if '-' in part:
-                    start, end = map(int, part.split('-'))
-                    new_doc.insert_pdf(session.doc, from_page=start-1, to_page=end-1)
-                else:
-                    p = int(part)
-                    new_doc.insert_pdf(session.doc, from_page=p-1, to_page=p-1)
-            output_path = os.path.join(data.output_dir, "CoreKit-Split-Custom.pdf")
-            new_doc.save(output_path)
-            return {"status": "success", "path": output_path}
-            
+            for idx in targets:
+                new_doc.insert_pdf(session.doc, from_page=idx, to_page=idx)
+
+            doc_id = str(uuid.uuid4())
+            new_session = DocumentSession(doc_bytes=new_doc.tobytes())
+            new_doc.close()
+            active_sessions[doc_id] = new_session
+            filename = "CoreKit-Split-Custom.pdf"
+            doc_filepaths[doc_id] = filename
+            record_audit(new_session, "Split PDF (Custom Range)", f"Pages: {data.pages}")
+
+            return {
+                "status": "success",
+                "mode": "custom",
+                "doc_id": doc_id,
+                "filename": filename,
+                "total_pages": len(new_session.doc),
+                "file_count": 1,
+            }
+
         elif data.mode == "fixed":
-            total = len(session.doc)
-            paths = []
+            if data.per_page < 1: raise ValueError("Invalid page range size")
+
+            parts = []
             for i in range(0, total, data.per_page):
-                new_doc = fitz.open()
                 end = min(i + data.per_page, total)
-                new_doc.insert_pdf(session.doc, from_page=i, to_page=end-1)
-                part_path = os.path.join(data.output_dir, f"CoreKit-Split-Part{(i//data.per_page)+1}.pdf")
-                new_doc.save(part_path)
-                paths.append(part_path)
-            return {"status": "success", "paths": paths}
+                part_doc = fitz.open()
+                part_doc.insert_pdf(session.doc, from_page=i, to_page=end - 1)
+                parts.append(part_doc.tobytes())
+                part_doc.close()
+
+            if len(parts) == 1:
+                doc_id = str(uuid.uuid4())
+                new_session = DocumentSession(doc_bytes=parts[0])
+                active_sessions[doc_id] = new_session
+                filename = "CoreKit-Split-Part1.pdf"
+                doc_filepaths[doc_id] = filename
+                record_audit(new_session, "Split PDF (Fixed Range)", f"Per {data.per_page} pages")
+
+                return {
+                    "status": "success",
+                    "mode": "fixed",
+                    "doc_id": doc_id,
+                    "filename": filename,
+                    "total_pages": len(new_session.doc),
+                    "file_count": 1,
+                }
+
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+                for i, part_bytes in enumerate(parts):
+                    zipf.writestr(f"CoreKit-Split-Part{i+1}.pdf", part_bytes)
+
+            zip_id = str(uuid.uuid4())
+            zip_sessions[zip_id] = zip_buffer.getvalue()
+            record_audit(session, "Split PDF (Fixed Range)", f"Per {data.per_page} pages, {len(parts)} files")
+
+            return {
+                "status": "success",
+                "mode": "fixed",
+                "zip_id": zip_id,
+                "filename": "CoreKit-Split-Results.zip",
+                "file_count": len(parts),
+            }
+        else:
+            raise ValueError("Invalid split mode")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -789,16 +855,19 @@ def add_text_to_pdf(data: TextReq):
 
 @app.post("/tools/compress")
 def compress_pdf(data: CompressReq):
+    target_path = doc_filepaths.get(data.doc_id, data.doc_id)
+    if not target_path or not os.path.exists(target_path):
+        raise HTTPException(status_code=400, detail="Invalid Document ID")
     try:
-        doc = fitz.open(data.input_path)
-        
+        doc = fitz.open(target_path)
+
         if doc.needs_pass:
             if not data.password or not doc.authenticate(data.password):
                 raise ValueError("Password missing or incorrect for compression")
-                
+
         if data.mode == "extreme": max_dim, jpeg_quality, garbage_lvl, subsampling = 720, 25, 4, 2
         elif data.mode == "recommended": max_dim, jpeg_quality, garbage_lvl, subsampling = 1200, 50, 4, 1
-        else: max_dim, jpeg_quality, garbage_lvl, subsampling = 2000, 75, 3, 0
+        else: max_dim, jpeg_quality, garbage_lvl, subsampling = 2000, 75, 3, 0  # "less"
 
         processed_xrefs, smask_dict = set(), {}
         for page_num in range(len(doc)):
@@ -830,7 +899,7 @@ def compress_pdf(data: CompressReq):
                     pdf_colorspace = "/DeviceGray" if img_pil.mode == "L" else "/DeviceRGB"
                     if img_pil.size[0] > max_dim or img_pil.size[1] > max_dim:
                         img_pil.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
-                    
+
                     img_byte_arr = io.BytesIO()
                     img_pil.save(img_byte_arr, format="JPEG", quality=jpeg_quality, optimize=True, subsampling=subsampling)
                     new_bytes = img_byte_arr.getvalue()
@@ -842,12 +911,12 @@ def compress_pdf(data: CompressReq):
                         doc.xref_set_key(xref, "BitsPerComponent", "8")
                         doc.xref_set_key(xref, "Width", str(img_pil.size[0]))
                         doc.xref_set_key(xref, "Height", str(img_pil.size[1]))
-                        
+
                         keys_to_remove = ["Decode", "DecodeParms", "ColorTransform"]
                         if not has_smask: keys_to_remove.extend(["SMask", "Mask"])
                         for key in keys_to_remove:
                             if doc.xref_get_key(xref, key)[0] != "null": doc.xref_set_key(xref, key, "null")
-                                
+
                         if has_smask:
                             smask_xref = smask_dict[xref]
                             try:
@@ -862,13 +931,32 @@ def compress_pdf(data: CompressReq):
                             except Exception: pass
                 except Exception: continue
 
-        doc.save(data.output_path, garbage=garbage_lvl, deflate=True, clean=True)
+        original_size = os.path.getsize(target_path)
+        compressed_bytes = doc.tobytes(garbage=garbage_lvl, deflate=True, clean=True)
         doc.close()
-        
-        if os.path.getsize(data.output_path) >= os.path.getsize(data.input_path):
-            shutil.copy(data.input_path, data.output_path)
-            
-        return {"status": "success", "path": data.output_path}
+
+        # Jika hasil kompresi malah lebih besar, gunakan file asli sebagai fallback
+        if len(compressed_bytes) >= original_size:
+            with open(target_path, "rb") as f:
+                compressed_bytes = f.read()
+
+        result_doc_id = str(uuid.uuid4())
+        new_session = DocumentSession(doc_bytes=compressed_bytes)
+        active_sessions[result_doc_id] = new_session
+
+        base_name = os.path.splitext(os.path.basename(target_path))[0]
+        filename = f"{base_name}_compressed.pdf"
+        doc_filepaths[result_doc_id] = filename
+        record_audit(new_session, "Compress PDF", f"Mode: {data.mode}")
+
+        return {
+            "status": "success",
+            "doc_id": result_doc_id,
+            "filename": filename,
+            "total_pages": len(new_session.doc),
+            "original_size_bytes": original_size,
+            "compressed_size_bytes": len(compressed_bytes),
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
