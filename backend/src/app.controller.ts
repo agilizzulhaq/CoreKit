@@ -3,6 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
+import { randomUUID } from 'crypto';
 
 @Controller()
 export class AppController {
@@ -19,7 +20,9 @@ export class AppController {
           cb(null, uploadPath);
         },
         filename: (req, file, cb) => {
-          cb(null, file.originalname);
+          const ext = path.extname(file.originalname);
+          const uniqueName = `${randomUUID()}${ext}`;
+          cb(null, uniqueName);
         },
       }),
     }),
@@ -27,11 +30,9 @@ export class AppController {
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     console.log(`File tersimpan di: ${file.path}`); 
     
-    // 1. Dapatkan path absolut dari file yang baru saja diunggah
     const absolutePath = path.resolve(file.path);
 
     try {
-      // 2. Komunikasi dengan Core Engine FastAPI
       const engineResponse = await fetch('http://127.0.0.1:8000/doc/open', {
         method: 'POST',
         headers: {
@@ -46,14 +47,13 @@ export class AppController {
 
       const engineData = await engineResponse.json();
 
-      // 3. Kembalikan data dari engine (terutama doc_id) ke Frontend
       return {
         message: 'File berhasil diunggah dan dibuka oleh Core Engine!',
         fileInfo: {
           filename: file.originalname,
           size: file.size,
         },
-        engineState: engineData, // Berisi doc_id, total_pages, permissions, dll.
+        engineState: engineData,
       };
 
     } catch (error) {

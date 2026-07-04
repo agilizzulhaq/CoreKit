@@ -1,3 +1,4 @@
+// frontend\src\components\Home.jsx
 import { useEffect, useRef, useState } from "react";
 
 const SECTION_KEY_MAP = [
@@ -12,7 +13,8 @@ export default function Home({
   setIsSidebarHidden,
   activeMenu,
   setActiveMenu,
-  triggerMergeUpload, // Prop baru
+  triggerMergeUpload,
+  triggerFilesToPdfUpload,
 }) {
   const toolsRef = useRef(null);
   const heroRef = useRef(null);
@@ -124,10 +126,7 @@ export default function Home({
             <h2>Document Conversion</h2>
           </div>
           <div className="grid" id="grid-doc-conversion">
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Files to PDF")}
-            >
+            <div className="card" onClick={triggerFilesToPdfUpload}>
               <div className="card-icon">
                 <img
                   src="/assets/file-earmark-richtext-fill.svg"

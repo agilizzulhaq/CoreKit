@@ -1,3 +1,4 @@
+# engine\main.py
 import fitz
 import io
 import os
@@ -45,13 +46,16 @@ def clean_excel_val(val):
 # 1. STATE GLOBAL APLIKASI 
 # ==========================================
 class DocumentSession:
-    def __init__(self, file_path=None, doc_bytes=None):
+    def __init__(self, file_path=None, doc_bytes=None, is_pdf=True):
         if doc_bytes:
             self.doc = fitz.open(stream=doc_bytes, filetype="pdf")
         elif file_path:
-            with open(file_path, "rb") as f:
-                file_data = f.read()
-            self.doc = fitz.open(stream=file_data, filetype="pdf")
+            if is_pdf:
+                with open(file_path, "rb") as f:
+                    file_data = f.read()
+                self.doc = fitz.open(stream=file_data, filetype="pdf")
+            else:
+                self.doc = fitz.open()
         else:
             self.doc = fitz.open()
             
@@ -130,7 +134,7 @@ class OpenFolderReq(BaseModel): path: str
 class QRCodeReq(BaseModel): link: str; with_logo: bool; output_path: str
 class QRScanReq(BaseModel): image_b64: str
 class OpenLinkReq(BaseModel): url: str
-class FilesToPdfReq(BaseModel): files: List[str]; output_path: str
+class FilesToPdfReq(BaseModel): files: List[str]; output_path: Optional[str] = None
 class FileInfoReq(BaseModel): path: str; doc_id: Optional[str] = None
 class CompressReq(BaseModel): input_path: str; output_path: str; mode: str; doc_id: Optional[str] = None; password: Optional[str] = None
 class SqlReadReq(BaseModel): path: str
@@ -284,8 +288,25 @@ def read_root(): return {"status": "CoreKit Engine is Ready!"}
 @app.post("/doc/open")
 def open_pdf(data: FilePathReq):
     try:
-        session = DocumentSession(file_path=data.path)
-        
+        ext = data.path.lower().split('.')[-1]
+        is_pdf = ext == 'pdf'
+
+        session = DocumentSession(file_path=data.path, is_pdf=is_pdf)
+
+        if not is_pdf:
+            doc_id = str(uuid.uuid4())
+            active_sessions[doc_id] = session
+            doc_filepaths[doc_id] = data.path
+
+            return {
+                "status": "success",
+                "doc_id": doc_id,
+                "filename": os.path.basename(data.path),
+                "total_pages": 0,
+                "permissions": {},
+                **session.get_status()
+            }
+
         # Deteksi PDF Terproteksi (Password)
         if session.doc.needs_pass:
             if not data.password:
@@ -293,7 +314,6 @@ def open_pdf(data: FilePathReq):
             if not session.doc.authenticate(data.password):
                 return {"status": "wrong_password"}
                 
-        # Deteksi Permissions Akurat menggunakan Bitwise PyMuPDF
         p = session.doc.permissions
         perms = {
             "commenting": bool(p & getattr(fitz, "PDF_PERM_ANNOTATE", 32)),
@@ -421,24 +441,39 @@ def files_to_pdf(data: FilesToPdfReq):
     try:
         new_doc = fitz.open()
         for file_path in data.files:
-            ext = file_path.lower().split('.')[-1]
+            # [PERUBAHAN] Resolve doc_id ke path asli, sama seperti /tools/merge
+            target_path = doc_filepaths.get(file_path, file_path)
+            ext = target_path.lower().split('.')[-1]
+
             if ext in ['png', 'jpg', 'jpeg', 'webp', 'bmp']:
-                img_doc = fitz.open(file_path)
+                img_doc = fitz.open(target_path)
                 pdf_bytes = img_doc.convert_to_pdf()
                 img_pdf = fitz.open("pdf", pdf_bytes)
                 new_doc.insert_pdf(img_pdf)
                 img_doc.close()
                 img_pdf.close()
             elif ext == 'txt':
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(target_path, 'r', encoding='utf-8') as f:
                     text_content = f.read()
                 page = new_doc.new_page(width=595, height=842)
-                rect = fitz.Rect(50, 50, 545, 792) 
+                rect = fitz.Rect(50, 50, 545, 792)
                 page.insert_textbox(rect, text_content, fontsize=11, fontname="helv")
 
-        new_doc.save(data.output_path, garbage=3, deflate=True)
+        # [PERUBAHAN] Buat session in-memory, bukan simpan ke disk langsung
+        doc_id = str(uuid.uuid4())
+        session = DocumentSession(doc_bytes=new_doc.tobytes())
         new_doc.close()
-        return {"status": "success", "path": data.output_path}
+        active_sessions[doc_id] = session
+        doc_filepaths[doc_id] = "Converted_Document.pdf"
+        record_audit(session, "Files to PDF", f"{len(data.files)} files converted")
+
+        return {
+            "status": "success",
+            "doc_id": doc_id,
+            "total_pages": len(session.doc),
+            "filename": "Converted_Document.pdf",
+            **session.get_status()
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

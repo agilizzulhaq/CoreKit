@@ -25,6 +25,31 @@ export async function closeDocumentApi(docId) {
   return await response.json();
 }
 
+export async function filesToPdf(files) {
+  const paths = files.map((f) => f.path);
+
+  const response = await fetch(`${API_URL}/tools/files_to_pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files: paths }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal mengonversi file ke PDF";
+
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}
+
 export async function mergeDocuments(files) {
   const paths = files.map((f) => f.path);
 
