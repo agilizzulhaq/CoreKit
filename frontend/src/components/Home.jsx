@@ -13,8 +13,9 @@ export default function Home({
   setIsSidebarHidden,
   activeMenu,
   setActiveMenu,
-  triggerMergeUpload,
   triggerFilesToPdfUpload,
+  triggerRotateUpload,
+  triggerMergeUpload,
 }) {
   const toolsRef = useRef(null);
   const heroRef = useRef(null);
@@ -148,10 +149,7 @@ export default function Home({
           <div className="grid" id="grid-pdf-tools">
             {/* Open PDF dihapus dari sini */}
 
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Rotate PDF")}
-            >
+            <div className="card" onClick={triggerRotateUpload}>
               <div className="card-icon">
                 <img src="/assets/arrow-repeat.svg" alt="Rotate PDF" />
               </div>
