@@ -18,6 +18,7 @@ export default function Home({
   triggerMergeUpload,
   triggerSplitUpload,
   triggerCompressUpload,
+  triggerNumberingUpload,
 }) {
   const toolsRef = useRef(null);
   const heroRef = useRef(null);
@@ -195,10 +196,7 @@ export default function Home({
               </div>
             </div>
 
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Page Numbering")}
-            >
+            <div className="card" onClick={triggerNumberingUpload}>
               <div className="card-icon">
                 <img src="/assets/123.svg" alt="Page Numbering" />
               </div>
