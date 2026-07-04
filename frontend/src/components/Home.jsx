@@ -15,6 +15,7 @@ export default function Home({
   setActiveMenu,
   triggerFilesToPdfUpload,
   triggerRotateUpload,
+  triggerSplitUpload,
   triggerMergeUpload,
 }) {
   const toolsRef = useRef(null);
@@ -159,10 +160,7 @@ export default function Home({
               </div>
             </div>
 
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Split PDF")}
-            >
+            <div className="card" onClick={triggerSplitUpload}>
               <div className="card-icon">
                 <img src="/assets/scissors.svg" alt="Split PDF" />
               </div>

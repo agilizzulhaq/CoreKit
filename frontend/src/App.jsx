@@ -14,9 +14,10 @@ function App() {
   const [activeModal, setActiveModal] = useState(null);
   const [featureFiles, setFeatureFiles] = useState([]);
 
-  const mergeFileInputRef = useRef(null);
   const filesToPdfInputRef = useRef(null);
   const rotateFileInputRef = useRef(null);
+  const splitFileInputRef = useRef(null);
+  const mergeFileInputRef = useRef(null);
 
   const triggerFilesToPdfUpload = () => {
     if (filesToPdfInputRef.current) filesToPdfInputRef.current.click();
@@ -24,6 +25,10 @@ function App() {
 
   const triggerRotateUpload = () => {
     if (rotateFileInputRef.current) rotateFileInputRef.current.click();
+  };
+
+  const triggerSplitUpload = () => {
+    if (splitFileInputRef.current) splitFileInputRef.current.click();
   };
 
   const triggerMergeUpload = () => {
@@ -46,6 +51,16 @@ function App() {
       setFeatureFiles(files);
       setActiveModal("rotate");
       setStatusMsg(`Memilih ${files[0].name} untuk diputar`);
+    }
+    e.target.value = null;
+  };
+
+  const handleSplitFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("split");
+      setStatusMsg(`Memilih ${files[0].name} untuk dipisahkan`);
     }
     e.target.value = null;
   };
@@ -99,6 +114,14 @@ function App() {
           <input
             type="file"
             accept="application/pdf"
+            ref={splitFileInputRef}
+            onChange={handleSplitFileChange}
+            style={{ display: "none" }}
+          />
+
+          <input
+            type="file"
+            accept="application/pdf"
             multiple
             ref={mergeFileInputRef}
             onChange={handleMergeFileChange}
@@ -109,9 +132,10 @@ function App() {
             activeScreen={activeScreen}
             activeMenu={activeMenu}
             setActiveMenu={setActiveMenu}
-            triggerMergeUpload={triggerMergeUpload}
             triggerFilesToPdfUpload={triggerFilesToPdfUpload}
             triggerRotateUpload={triggerRotateUpload}
+            triggerSplitUpload={triggerSplitUpload}
+            triggerMergeUpload={triggerMergeUpload}
           />
 
           <Workspace
