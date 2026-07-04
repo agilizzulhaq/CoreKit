@@ -151,3 +151,26 @@ export async function compressDocument(docId, mode, password) {
 
   return await response.json();
 }
+
+export async function numberPages(docId, options) {
+  const response = await fetch(`${API_URL}/tools/numbering`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ doc_id: docId, ...options }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal menambahkan nomor halaman";
+
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}
