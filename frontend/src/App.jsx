@@ -12,14 +12,19 @@ function App() {
   );
 
   // State baru untuk fitur spesifik
-  const [activeModal, setActiveModal] = useState(null); // 'merge', 'split', dll
-  const [featureFiles, setFeatureFiles] = useState([]); // Menyimpan file untuk diproses
+  const [activeModal, setActiveModal] = useState(null);
+  const [featureFiles, setFeatureFiles] = useState([]);
 
   const mergeFileInputRef = useRef(null);
+  const filesToPdfInputRef = useRef(null);
 
   // Trigger input file khusus untuk Merge (Bisa multiple files)
   const triggerMergeUpload = () => {
     if (mergeFileInputRef.current) mergeFileInputRef.current.click();
+  };
+
+  const triggerFilesToPdfUpload = () => {
+    if (filesToPdfInputRef.current) filesToPdfInputRef.current.click();
   };
 
   const handleMergeFileChange = (e) => {
@@ -30,6 +35,16 @@ function App() {
       setStatusMsg(`Memilih ${files.length} file untuk digabungkan`);
     }
     e.target.value = null; // Reset input
+  };
+
+  const handleFilesToPdfChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("filesToPdf");
+      setStatusMsg(`Memilih ${files.length} file untuk dikonversi ke PDF`);
+    }
+    e.target.value = null;
   };
 
   const handleCloseModal = () => {
@@ -51,7 +66,15 @@ function App() {
         />
 
         <div id="main-content">
-          {/* Input file khusus Merge (multiple) */}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/bmp,.txt"
+            multiple
+            ref={filesToPdfInputRef}
+            onChange={handleFilesToPdfChange}
+            style={{ display: "none" }}
+          />
+
           <input
             type="file"
             accept="application/pdf"
@@ -66,9 +89,9 @@ function App() {
             activeMenu={activeMenu}
             setActiveMenu={setActiveMenu}
             triggerMergeUpload={triggerMergeUpload}
+            triggerFilesToPdfUpload={triggerFilesToPdfUpload}
           />
 
-          {/* Workspace sekarang bertindak sebagai Modal Manager untuk tiap fitur */}
           <Workspace
             activeModal={activeModal}
             closeModal={handleCloseModal}
