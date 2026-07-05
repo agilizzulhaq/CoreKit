@@ -4,7 +4,7 @@
 
 **Layanan Unit PDF Integrasi Akurat**
 
-Aplikasi desktop lintas platform untuk mengelola, mengedit, dan mengamankan dokumen PDF Anda — cepat, ringan, dan sepenuhnya berjalan di perangkat Anda sendiri.
+A cross-platform desktop application for managing, editing, and securing your PDF documents — fast, lightweight, and running entirely on your own device.
 
 ![Status](https://img.shields.io/badge/status-active-success)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -18,54 +18,45 @@ Aplikasi desktop lintas platform untuk mengelola, mengedit, dan mengamankan doku
 
 ---
 
-## ✨ Tentang LUNPIA
+## ✨ About LUNPIA
 
-**LUNPIA** (dikenal juga dengan nama internal **CoreKit**) adalah workspace dokumen digital yang menggabungkan kekuatan **PyMuPDF**, **FastAPI**, **NestJS**, dan **React** dalam satu aplikasi desktop yang solid. Semua pemrosesan dokumen — mulai dari konversi, rotasi, penggabungan, hingga penandatanganan — dijalankan secara **lokal** melalui _engine_ Python bawaan, sehingga dokumen Anda tidak perlu diunggah ke server pihak ketiga mana pun.
+**LUNPIA** (also known internally as **CoreKit**) is a digital document workspace that combines the power of **PyMuPDF**, **FastAPI**, **NestJS**, and **React** into a single, solid desktop application. All document processing — from conversion and rotation to merging and security — runs **locally** through a built-in Python engine, so your documents never need to be uploaded to any third-party server.
 
-Proyek ini dibangun dengan arsitektur tiga lapis:
+The project is built on a three-layer architecture:
 
-| Lapisan         | Teknologi         | Peran                                                           |
-| --------------- | ----------------- | --------------------------------------------------------------- |
-| **Frontend**    | React (Vite)      | Antarmuka pengguna, workspace interaktif, preview PDF real-time |
-| **Gateway**     | NestJS            | Menangani upload file & menjembatani frontend ke Core Engine    |
-| **Core Engine** | FastAPI + PyMuPDF | Logika inti pemrosesan PDF, gambar, dan data                    |
+| Layer           | Technology        | Role                                                                    |
+| --------------- | ----------------- | ----------------------------------------------------------------------- |
+| **Frontend**    | React (Vite)      | User interface, per-feature modals, real-time PDF preview               |
+| **Gateway**     | NestJS            | Handles file uploads and bridges the frontend to the Core Engine        |
+| **Core Engine** | FastAPI + PyMuPDF | Core processing logic for PDFs, images, QR codes, and document sessions |
 
 ---
 
-## 🚀 Fitur Utama
+## 🚀 Key Features
 
 ### 📑 Document Conversion
 
-- **Files to PDF** — Gabungkan gambar (`PNG`, `JPG`, `WEBP`, `BMP`) dan file teks (`.txt`) menjadi satu dokumen PDF yang rapi, lengkap dengan drag-and-drop untuk mengatur urutan halaman.
+- **Files to PDF** — Combine images (`PNG`, `JPG`, `JPEG`, `WEBP`, `BMP`) and text files (`.txt`) into a single, clean PDF document.
 
 ### 🛠️ PDF Tools
 
-- **Rotate PDF** — Putar halaman tertentu searah atau berlawanan arah jarum jam, per halaman atau sekaligus banyak halaman dengan sudut berbeda.
-- **Split PDF** — Pisahkan dokumen dengan mode _Custom Range_ (pilih halaman spesifik) atau _Fixed Split_ (bagi rata menjadi beberapa file per-N-halaman).
-- **Merge PDF** — Gabungkan banyak file PDF menjadi satu dokumen, dengan pengurutan berbasis drag-and-drop.
-- **Compress PDF** — Kompres ukuran file dengan tiga level kualitas (_Extreme_, _Recommended_, _High Quality_) tanpa proses upload ke luar.
-- **Page Numbering** — Tambahkan penomoran halaman otomatis dengan berbagai gaya (angka, romawi, alfabet) dan format kustom.
-- **Manual Signature** — Tempatkan tanda tangan digital secara presisi pada halaman yang dipilih, lengkap opsi hapus latar belakang otomatis.
-- **Auto Signature** — Terapkan tanda tangan yang sama ke banyak halaman sekaligus dalam satu aksi.
-- **Text Editor** — Sisipkan teks kustom (warna, ukuran, posisi bebas) langsung ke dalam dokumen PDF.
-- **Password Protection** — Amankan PDF dengan enkripsi AES-256 dan kata sandi milik Anda sendiri.
-- **Lock Document** — Kunci dokumen menjadi mode _read-only_ untuk mencegah pengeditan dan penyalinan konten.
+- **Rotate PDF** — Rotate specific pages clockwise or counter-clockwise, either one page at a time or in batches with different angles, complete with a live preview.
+- **Split PDF** — Split a document using _Custom Range_ mode (select specific pages) or _Fixed Split_ mode (divide evenly into multiple files every N pages, automatically packaged into a ZIP when the result is more than one file).
+- **Merge PDF** — Combine multiple PDF files into a single document, with drag-and-drop reordering.
+- **Compress PDF** — Reduce file size with three quality levels (_Extreme_, _Recommended_, _High Quality_), fully processed locally.
+- **Page Numbering** — Automatically add page numbers with various styles (numeric, roman, alphabetic) and customizable formats (prefix, suffix, divider).
+- **Signature** — Precisely place a digital signature on selected pages, with an option to automatically remove the background.
+- **Password Protection** — Secure your PDF with AES-256 encryption and a password of your choice, with support for batch-processing multiple files at once.
+- **Lock Document** — Lock a document into read-only mode to prevent editing, form filling, and signing, with support for batch-processing multiple files at once.
 
 ### 📷 QR Code
 
-- **QR Code Generator** — Ubah tautan/URL menjadi gambar QR Code, lengkap opsi logo di tengah.
-- **Scan QR Code** — Baca dan ekstrak data dari gambar QR Code secara instan.
-
-### 🔍 Kualitas Hidup Lainnya
-
-- Riwayat **Undo/Redo** di setiap sesi dokumen.
-- **Audit log** otomatis untuk setiap aksi yang dilakukan pada dokumen.
-- Deteksi dan penanganan PDF berpassword secara otomatis saat dibuka.
-- Rendering halaman real-time menggunakan `pdf.js` di sisi frontend.
+- **QR Code Generator** — Turn a link/URL into a QR code image, with an optional logo in the center.
+- **QR Code Scanner** — Read and extract data from a QR code image instantly.
 
 ---
 
-## 🏗️ Arsitektur Singkat
+## 🏗️ Architecture Overview
 
 ```
 ┌─────────────────┐      HTTP       ┌──────────────────┐      HTTP       ┌───────────────────┐
@@ -75,32 +66,32 @@ Proyek ini dibangun dengan arsitektur tiga lapis:
      Port 5173                            Port 3000                            Port 8000
 ```
 
-- **Frontend** mengunggah file ke **Gateway** (`/upload`), yang kemudian meneruskannya ke **Core Engine** (`/doc/open`) untuk dibuka sebagai sesi dokumen aktif.
-- Seluruh operasi PDF (rotate, merge, split, sign, dll.) dikirim langsung dari frontend ke Core Engine menggunakan `doc_id` sesi tersebut.
-- Hasil akhir diunduh langsung dari Core Engine melalui endpoint streaming (`/doc/download/{doc_id}`).
+- For features that require an **interactive document session and preview** (Rotate, Page Numbering, Signature), the file is uploaded through the **Gateway** (`/upload`) and then opened as an active session in the **Core Engine** (`/doc/open`), producing a `doc_id` that is used for all subsequent operations (rotate, numbering, sign, page rendering).
+- For **batch, local-file-path-based** features (Files to PDF, Merge, Split, Compress, Password Protection, Lock Document), the Electron frontend sends the absolute file path directly to the relevant Core Engine endpoint (`/tools/*`, `/security/*`) without going through an explicit upload step.
+- The final result is downloaded directly from the Core Engine via a streaming endpoint (`/doc/download/{doc_id}`, `/doc/download_zip/{zip_id}`, or `/doc/download_blob/{blob_id}`, depending on the output type).
 
 ---
 
-## 🧰 Prasyarat
+## 🧰 Prerequisites
 
-Pastikan perangkat Anda telah memiliki:
+Make sure your machine has the following installed:
 
-- **Python** 3.10 atau lebih baru
-- **Node.js** 18 LTS atau lebih baru beserta `npm`
+- **Python** 3.10 or newer
+- **Node.js** 18 LTS or newer, along with `npm`
 - **Git**
 
 ---
 
-## ⚡ Cara Memulai
+## ⚡ Getting Started
 
-### 1. Clone Repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/<username>/<repo-name>.git
 cd <repo-name>
 ```
 
-### 2. Jalankan Core Engine (FastAPI)
+### 2. Run the Core Engine (FastAPI)
 
 ```bash
 cd engine
@@ -110,9 +101,9 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Engine akan berjalan di `http://127.0.0.1:8000`.
+The engine will run at `http://127.0.0.1:8000`.
 
-### 3. Jalankan Gateway (NestJS)
+### 3. Run the Gateway (NestJS)
 
 ```bash
 cd backend
@@ -120,9 +111,9 @@ npm install
 npm run start:dev
 ```
 
-Gateway akan berjalan di `http://localhost:3000`.
+The gateway will run at `http://localhost:3000`.
 
-### 4. Jalankan Frontend (React)
+### 4. Run the Frontend (React)
 
 ```bash
 cd frontend
@@ -130,68 +121,80 @@ npm install
 npm run dev
 ```
 
-Buka `http://localhost:5173` di browser Anda — LUNPIA siap digunakan! 🎉
+Open `http://localhost:5173` in your browser — LUNPIA is ready to use! 🎉
 
-> 💡 **Tips:** Jalankan ketiga layanan (`engine`, `backend`, `frontend`) secara bersamaan di terminal terpisah agar aplikasi berfungsi penuh.
+> 💡 **Tip:** Run all three services (`engine`, `backend`, `frontend`) simultaneously in separate terminals for the app to work fully.
 
 ---
 
-## 📁 Struktur Proyek
+## 📁 Project Structure
 
 ```
 .
-├── engine/            # Core Engine — FastAPI + PyMuPDF (logika pemrosesan PDF)
+├── engine/                        # Core Engine — FastAPI + PyMuPDF (PDF processing logic)
 │   └── main.py
-├── backend/            # Gateway — NestJS (menangani upload file)
+├── backend/                       # Gateway — NestJS (handles file uploads)
 │   └── src/app.controller.ts
-└── frontend/           # Antarmuka pengguna — React + Vite
+└── frontend/                      # User interface — React + Vite
     └── src/
         ├── components/
-        │   ├── Home.jsx
-        │   ├── Sidebar.jsx
-        │   ├── Workspace.jsx
-        │   └── workspace/       # Workspace per-fitur (Rotate, Split, Merge, dst.)
-        ├── api.js
+        │   ├── Home.jsx           # Landing page & feature navigation grid
+        │   ├── Sidebar.jsx        # Sidebar navigation with scrollspy
+        │   ├── Workspace.jsx      # Modal router for each feature
+        │   └── workspace/         # Per-feature modals
+        │       ├── FilesToPdfWorkspace.jsx
+        │       ├── RotateWorkspace.jsx
+        │       ├── SplitWorkspace.jsx
+        │       ├── MergeWorkspace.jsx
+        │       ├── CompressWorkspace.jsx
+        │       ├── PageNumberingWorkspace.jsx
+        │       ├── PasswordProtectionWorkspace.jsx
+        │       ├── LockDocumentWorkspace.jsx
+        │       ├── SignatureWorkspace.jsx
+        │       ├── QrCodeGeneratorWorkspace.jsx
+        │       └── QrCodeScannerWorkspace.jsx
+        ├── App.jsx                # Root component & modal state management
+        ├── api.js                 # Collection of Gateway/Engine API call functions
         └── Style.css
 ```
 
 ---
 
-## 🆘 Bantuan & Dukungan
+## 🆘 Help & Support
 
-- **Menemukan bug atau ingin request fitur?** Silakan buka [Issue baru](../../issues) di repository ini.
-- **Punya pertanyaan seputar penggunaan?** Cek [Discussions](../../discussions) atau ajukan pertanyaan lewat Issue dengan label `question`.
-- Dokumentasi tambahan (jika tersedia) dapat ditemukan di folder [`docs/`](docs/).
-
----
-
-## 🤝 Kontribusi
-
-Kontribusi dalam bentuk apa pun sangat kami hargai — baik laporan bug, ide fitur, maupun pull request!
-
-Sebelum mengirimkan kontribusi, mohon baca panduan lengkap di [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-Alur singkat berkontribusi:
-
-1. Fork repository ini
-2. Buat branch baru (`git checkout -b fitur/nama-fitur`)
-3. Commit perubahan Anda (`git commit -m 'Menambahkan fitur X'`)
-4. Push ke branch Anda (`git push origin fitur/nama-fitur`)
-5. Buka Pull Request
+- **Found a bug or want to request a feature?** Please open a [new Issue](../../issues) in this repository.
+- **Have a question about usage?** Check the [Discussions](../../discussions) tab or ask via an Issue with the `question` label.
+- Additional documentation (if available) can be found in the [`docs/`](docs/) folder.
 
 ---
 
-## 👥 Maintainer
+## 🤝 Contributing
 
-Proyek ini dikembangkan dan dipelihara oleh tim internal **Balai Besar POM di Semarang**.
+Contributions of any kind are greatly appreciated — bug reports, feature ideas, and pull requests alike!
 
-Untuk pertanyaan langsung terkait proyek, silakan hubungi maintainer melalui halaman [Issues](../../issues) repository ini.
+Before submitting a contribution, please read the full guide in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+Quick contribution workflow:
+
+1. Fork this repository
+2. Create a new branch (`git checkout -b feature/feature-name`)
+3. Commit your changes following the `feat:` / `fix:` convention (`git commit -m 'feat: add feature X'`)
+4. Push to your branch (`git push origin feature/feature-name`)
+5. Open a Pull Request
 
 ---
 
-## 📜 Lisensi
+## 👥 Maintainers
 
-Proyek ini dilisensikan di bawah ketentuan yang tercantum dalam berkas [`LICENSE`](LICENSE).
+This project is developed and maintained by the internal team at **Balai Besar POM di Semarang**.
+
+For direct questions regarding the project, please contact the maintainers via this repository's [Issues](../../issues) page.
+
+---
+
+## 📜 License
+
+This project is licensed under the terms stated in the [`LICENSE`](LICENSE) file.
 
 ---
 

@@ -1,13 +1,11 @@
-// frontend\src\components\Sidebar.jsx
 import { useEffect, useRef } from "react";
 
-// Daftar menu: key dipakai untuk sinkronisasi dengan scrollspy di Home.jsx
 const NAV_ITEMS = [
   {
     key: "home",
     label: "Home",
     icon: "/assets/house-fill.svg",
-    section: null, // null = scroll ke hero/paling atas
+    section: null,
   },
   {
     key: "doc-conversion",
@@ -41,8 +39,6 @@ export default function Sidebar({
   const navRefs = useRef({});
   const indicatorRef = useRef(null);
 
-  // Kunci menu yang harus disorot saat ini.
-  // Jika sedang di Workspace, paksa indikator ke "pdf-tools".
   const resolvedActiveKey =
     activeScreen === "workspace" ? "pdf-tools" : activeMenu;
 
@@ -60,21 +56,16 @@ export default function Sidebar({
     }
   };
 
-  // Geser indikator setiap kali menu aktif / layar berubah
   useEffect(() => {
     moveIndicator();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedActiveKey, isCollapsed]);
 
-  // Reposisi ulang saat ukuran window berubah (mis. resize browser)
   useEffect(() => {
     window.addEventListener("resize", moveIndicator);
     return () => window.removeEventListener("resize", moveIndicator);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedActiveKey]);
 
   const handleNavClick = (item) => {
-    // Kasus khusus: PDF Tools sambil ada dokumen terbuka -> langsung ke Workspace
     if (item.key === "pdf-tools" && docDetails) {
       setActiveScreen("workspace");
       setActiveMenu("pdf-tools");
@@ -84,7 +75,6 @@ export default function Sidebar({
     setActiveScreen("home");
     setActiveMenu(item.key);
 
-    // Tunggu 1 frame render supaya screen "home" sudah tampil sebelum discroll
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (item.section) {
@@ -115,7 +105,6 @@ export default function Sidebar({
       </div>
 
       <div className="nav-list">
-        {/* Indikator yang bergeser mengikuti menu aktif */}
         <div ref={indicatorRef} className="nav-indicator" />
 
         <div
