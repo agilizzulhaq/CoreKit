@@ -23,6 +23,7 @@ export default function Home({
   triggerLockUpload,
   triggerSignUpload,
   openQrGenerator,
+  openQrScanner,
 }) {
   const toolsRef = useRef(null);
   const heroRef = useRef(null);
@@ -255,15 +256,12 @@ export default function Home({
                 <p>Convert links or URLs into a QR Code image</p>
               </div>
             </div>
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Scan QR Code")}
-            >
+            <div className="card" onClick={openQrScanner}>
               <div className="card-icon">
-                <img src="/assets/qr-code-scan.svg" alt="Scan QR Code" />
+                <img src="/assets/qr-code-scan.svg" alt="QR Code Scanner" />
               </div>
               <div className="card-text">
-                <h3>Scan QR Code</h3>
+                <h3>QR Code Scanner</h3>
                 <p>Read and extract data from a QR Code image</p>
               </div>
             </div>

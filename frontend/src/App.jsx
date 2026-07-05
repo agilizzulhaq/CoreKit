@@ -165,6 +165,12 @@ function App() {
     setStatusMsg("Membuat QR Code");
   };
 
+  const openQrScanner = () => {
+    setFeatureFiles([]);
+    setActiveModal("qrScanner");
+    setStatusMsg("Memindai QR Code");
+  };
+
   return (
     <>
       <div id="app-container">
@@ -268,6 +274,7 @@ function App() {
             triggerLockUpload={triggerLockUpload}
             triggerSignUpload={triggerSignUpload}
             openQrGenerator={openQrGenerator}
+            openQrScanner={openQrScanner}
           />
 
           <Workspace

@@ -9,6 +9,7 @@ import PasswordProtectionWorkspace from "./workspace/PasswordProtectionWorkspace
 import LockDocumentWorkspace from "./workspace/LockDocumentWorkspace";
 import SignatureWorkspace from "./workspace/SignatureWorkspace";
 import QrCodeGeneratorWorkspace from "./workspace/QrCodeGeneratorWorkspace";
+import QrCodeScannerWorkspace from "./workspace/QrCodeScannerWorkspace";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -66,6 +67,8 @@ export default function Workspace({
         return <SignatureWorkspace files={files} closeModal={closeModal} />;
       case "qrGenerator":
         return <QrCodeGeneratorWorkspace closeModal={closeModal} />;
+      case "qrScanner":
+        return <QrCodeScannerWorkspace closeModal={closeModal} />;
       default:
         return (
           <div className="workspace-empty">
