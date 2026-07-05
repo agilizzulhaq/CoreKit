@@ -98,11 +98,70 @@ export default function Home({
       className={`screen ${activeScreen === "home" ? "active" : ""}`}
     >
       <div className="hero" id="screen-home-hero" ref={heroRef}>
-        <div className="hero-content">
-          <div className="hero-badge">Layanan Unit PDF Integrasi Akurat</div>
-          <h1>LUNPIA Workspace</h1>
-          <p>Smart and Secure Solution for Your Digital Document Management.</p>
+        <div
+          className="hero-bg-photo"
+          style={{ backgroundImage: "url(/assets/bbpom.jpg)" }}
+          aria-hidden="true"
+        ></div>
+        <div className="hero-grid">
+          <div className="hero-content">
+            <div className="hero-badge">Layanan Unit PDF Integrasi Akurat</div>
+            <h1>
+              <span className="hero-title-main">LUNPIA</span>
+              <span className="hero-title-sub">Workspace</span>
+            </h1>
+            <p>
+              Kelola, gabungkan, dan amankan dokumen PDF dalam satu ruang kerja
+              yang cepat dan rapi.
+            </p>
+            <div className="hero-chips">
+              <button
+                className="hero-chip"
+                onClick={() =>
+                  document
+                    .getElementById("cat-doc-conversion")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                Konversi Dokumen
+              </button>
+              <button
+                className="hero-chip"
+                onClick={() =>
+                  document
+                    .getElementById("cat-pdf-tools")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                PDF Tools
+              </button>
+              <button
+                className="hero-chip"
+                onClick={() =>
+                  document
+                    .getElementById("cat-qr-code")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                QR Code
+              </button>
+            </div>
+          </div>
+
+          <div className="hero-illustration" aria-hidden="true">
+            <div className="doc-stack">
+              <div className="doc-card doc-card-3"></div>
+              <div className="doc-card doc-card-2"></div>
+              <div className="doc-card doc-card-1">
+                <span className="doc-line doc-line-title"></span>
+                <span className="doc-line"></span>
+                <span className="doc-line"></span>
+                <span className="doc-line doc-line-short"></span>
+              </div>
+            </div>
+          </div>
         </div>
+
         <div className="scroll-indicator" onClick={scrollToTools}>
           <span className="scroll-text">Scroll to see features</span>
           <svg
