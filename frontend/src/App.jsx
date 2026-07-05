@@ -159,6 +159,12 @@ function App() {
     setStatusMsg("All rights reserved © LUNPIA 2026");
   };
 
+  const openQrGenerator = () => {
+    setFeatureFiles([]);
+    setActiveModal("qrGenerator");
+    setStatusMsg("Membuat QR Code");
+  };
+
   return (
     <>
       <div id="app-container">
@@ -261,6 +267,7 @@ function App() {
             triggerProtectUpload={triggerProtectUpload}
             triggerLockUpload={triggerLockUpload}
             triggerSignUpload={triggerSignUpload}
+            openQrGenerator={openQrGenerator}
           />
 
           <Workspace

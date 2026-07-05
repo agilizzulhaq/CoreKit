@@ -265,3 +265,26 @@ export async function lockDocuments(fileEntries) {
 
   return await response.json();
 }
+
+export async function generateQrCode(link, withLogo) {
+  const response = await fetch(`${API_URL}/tools/qrcode`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ link, with_logo: withLogo }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal membuat QR Code";
+
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}

@@ -22,6 +22,7 @@ export default function Home({
   triggerProtectUpload,
   triggerLockUpload,
   triggerSignUpload,
+  openQrGenerator,
 }) {
   const toolsRef = useRef(null);
   const heroRef = useRef(null);
@@ -240,16 +241,12 @@ export default function Home({
             </div>
           </div>
 
-          {/* --- QR CODE --- */}
           <div className="category-header mt-30" id="cat-qr-code">
             <img src="/assets/qr-code.svg" alt="QR Icon" />
             <h2>QR Code</h2>
           </div>
           <div className="grid" id="grid-qr-code">
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Generate QR Code")}
-            >
+            <div className="card" onClick={openQrGenerator}>
               <div className="card-icon">
                 <img src="/assets/qr-code.svg" alt="Generate QR Code" />
               </div>

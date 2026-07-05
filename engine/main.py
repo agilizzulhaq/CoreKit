@@ -147,7 +147,9 @@ class LockBatchReq(BaseModel):
     files: List[LockBatchItem]
 class LockReq(BaseDocReq): output_path: str
 class OpenFolderReq(BaseModel): path: str
-class QRCodeReq(BaseModel): link: str; with_logo: bool; output_path: str
+class QRCodeReq(BaseModel):
+    link: str
+    with_logo: bool
 class QRScanReq(BaseModel): image_b64: str
 class OpenLinkReq(BaseModel): url: str
 class FilesToPdfReq(BaseModel): files: List[str]; output_path: Optional[str] = None
@@ -986,13 +988,23 @@ def compress_pdf(data: CompressReq):
 @app.post("/tools/qrcode")
 def generate_qrcode(data: QRCodeReq):
     try:
-        qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_H if data.with_logo else qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+        if not data.link or not data.link.strip():
+            raise ValueError("Link tidak boleh kosong")
+
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_H if data.with_logo else qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
         qr.add_data(data.link)
         qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white").convert('RGB')
+        img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
 
         if data.with_logo:
             logo_path = get_resource_path(os.path.join("src", "assets", "bpom.png"))
+            if not os.path.exists(logo_path):
+                logo_path = os.path.join("..", "frontend", "public", "assets", "bpom.png")
             if os.path.exists(logo_path):
                 logo = Image.open(logo_path).convert("RGBA")
                 basewidth = int(img.size[0] / 4)
@@ -1001,8 +1013,14 @@ def generate_qrcode(data: QRCodeReq):
                 logo = logo.resize((basewidth, hsize), Image.Resampling.LANCZOS)
                 img.paste(logo, ((img.size[0] - logo.size[0]) // 2, (img.size[1] - logo.size[1]) // 2), mask=logo)
 
-        img.save(data.output_path)
-        return {"status": "success", "path": data.output_path}
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format="PNG")
+        img_b64 = base64.b64encode(img_byte_arr.getvalue()).decode("utf-8")
+
+        return {
+            "status": "success",
+            "image_b64": f"data:image/png;base64,{img_b64}",
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

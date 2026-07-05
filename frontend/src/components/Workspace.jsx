@@ -8,6 +8,7 @@ import PageNumberingWorkspace from "./workspace/PageNumberingWorkspace";
 import PasswordProtectionWorkspace from "./workspace/PasswordProtectionWorkspace";
 import LockDocumentWorkspace from "./workspace/LockDocumentWorkspace";
 import SignatureWorkspace from "./workspace/SignatureWorkspace";
+import QrCodeGeneratorWorkspace from "./workspace/QrCodeGeneratorWorkspace";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -63,6 +64,8 @@ export default function Workspace({
         );
       case "sign":
         return <SignatureWorkspace files={files} closeModal={closeModal} />;
+      case "qrGenerator":
+        return <QrCodeGeneratorWorkspace closeModal={closeModal} />;
       default:
         return (
           <div className="workspace-empty">
