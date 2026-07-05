@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import ThemeToggle from "./ThemeToggle";
 
 const NAV_ITEMS = [
   {
@@ -102,6 +103,7 @@ export default function Sidebar({
           onClick={toggleSidebar}
         />
         <span className="brand">LUNPIA</span>
+        <ThemeToggle />
       </div>
 
       <div className="nav-list">
