@@ -9,11 +9,8 @@ import uuid
 import qrcode
 import sys
 import webbrowser
-import getpass
-import json
 import secrets
 import zipfile
-from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,37 +45,6 @@ class DocumentSession:
                 self.doc = fitz.open()
         else:
             self.doc = fitz.open()
-            
-        self.history = []
-        self.redo_stack = []
-
-    def save_snapshot(self):
-        self.history.append(self.doc.tobytes())
-        if len(self.history) > 10:
-            self.history.pop(0)
-        self.redo_stack.clear()
-
-    def undo(self):
-        if not self.history: return False
-        self.redo_stack.append(self.doc.tobytes())
-        old_bytes = self.history.pop()
-        self.doc.close()
-        self.doc = fitz.open(stream=old_bytes, filetype="pdf")
-        return True
-
-    def redo(self):
-        if not self.redo_stack: return False
-        self.history.append(self.doc.tobytes())
-        new_bytes = self.redo_stack.pop()
-        self.doc.close()
-        self.doc = fitz.open(stream=new_bytes, filetype="pdf")
-        return True
-
-    def get_status(self):
-        return {
-            "can_undo": len(self.history) > 0,
-            "can_redo": len(self.redo_stack) > 0
-        }
 
 active_sessions: dict[str, DocumentSession] = {}
 doc_filepaths: dict[str, str] = {}
@@ -243,35 +209,6 @@ def get_resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-def record_audit(session: DocumentSession, action: str, details: str = ""):
-    try:
-        user = getpass.getuser()
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_entry = {"timestamp": now_str, "user": user, "action": action, "details": details}
-        
-        if session and session.doc:
-            meta = session.doc.metadata or {}
-            keywords = meta.get("keywords", "") or ""
-            
-            logs = []
-            if "CoreKit_LOG_JSON:" in keywords:
-                try:
-                    json_str = keywords.split("CoreKit_LOG_JSON:")[1]
-                    logs = json.loads(json_str)
-                except:
-                    pass
-                    
-            logs.insert(0, log_entry)
-            
-            clean_keywords = keywords.split("CoreKit_LOG_JSON:")[0]
-            new_keywords = f"{clean_keywords}CoreKit_LOG_JSON:{json.dumps(logs)}"
-            
-            meta["keywords"] = new_keywords
-            meta["modDate"] = fitz.get_pdf_now()
-            session.doc.set_metadata(meta)
-    except Exception as e:
-        print(f"Failed to record audit log: {str(e)}")
-
 # ==========================================
 # 4. CORE ENDPOINTS 
 # ==========================================
@@ -297,7 +234,6 @@ def open_pdf(data: FilePathReq):
                 "filename": os.path.basename(data.path),
                 "total_pages": 0,
                 "permissions": {},
-                **session.get_status()
             }
 
         # Deteksi PDF Terproteksi (Password)
@@ -328,7 +264,6 @@ def open_pdf(data: FilePathReq):
             "filename": os.path.basename(data.path),
             "total_pages": len(session.doc),
             "permissions": perms,
-            **session.get_status()
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -338,8 +273,6 @@ def close_pdf(data: CloseReq):
     session = active_sessions.pop(data.doc_id, None)
     doc_filepaths.pop(data.doc_id, None)
     if session:
-        session.history.clear()
-        session.redo_stack.clear()
         session.doc.close()
     return {"status": "success"}
 
@@ -421,18 +354,6 @@ def download_blob(blob_id: str, filename: str = "document.pdf"):
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
-@app.post("/doc/undo")
-def undo_action(data: BaseDocReq):
-    session = active_sessions.get(data.doc_id)
-    if session and session.undo(): return {"status": "success", "total_pages": len(session.doc), **session.get_status()}
-    raise HTTPException(status_code=400, detail="Nothing to undo")
-
-@app.post("/doc/redo")
-def redo_action(data: BaseDocReq):
-    session = active_sessions.get(data.doc_id)
-    if session and session.redo(): return {"status": "success", "total_pages": len(session.doc), **session.get_status()}
-    raise HTTPException(status_code=400, detail="Nothing to redo")
-
 @app.get("/doc/render/{doc_id}/{page_num}")
 def render_page(doc_id: str, page_num: int, zoom: float = 1.0):
     session = active_sessions.get(doc_id)
@@ -480,14 +401,12 @@ def files_to_pdf(data: FilesToPdfReq):
         new_doc.close()
         active_sessions[doc_id] = session
         doc_filepaths[doc_id] = "Converted_Document.pdf"
-        record_audit(session, "Files to PDF", f"{len(data.files)} files converted")
 
         return {
             "status": "success",
             "doc_id": doc_id,
             "total_pages": len(session.doc),
             "filename": "Converted_Document.pdf",
-            **session.get_status()
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -500,7 +419,6 @@ def merge_pdf(data: MergeReq):
     try:
         if data.doc_id and data.doc_id in active_sessions:
             session = active_sessions[data.doc_id]
-            session.save_snapshot()
             start_idx = data.insert_page if data.insert_mode == "custom" and data.insert_page >= 0 else -1
             
             for f in data.files:
@@ -520,13 +438,11 @@ def merge_pdf(data: MergeReq):
                     session.doc.insert_pdf(src_doc)
                 src_doc.close()
                 
-            record_audit(session, "Merge PDF", f"{len(data.files)} files merged")
             return {
                 "status": "success", 
                 "doc_id": data.doc_id, 
                 "total_pages": len(session.doc),
                 "filename": doc_filepaths.get(data.doc_id, "Merged_Document.pdf"),
-                **session.get_status()
             }
         else:
             new_doc = fitz.open()
@@ -547,13 +463,11 @@ def merge_pdf(data: MergeReq):
             new_doc.close()
             active_sessions[doc_id] = session
             doc_filepaths[doc_id] = "Merged_Document.pdf"
-            record_audit(session, "Merge PDF", f"New document created from {len(data.files)} files")
             return {
                 "status": "success", 
                 "doc_id": doc_id, 
                 "total_pages": len(session.doc),
                 "filename": "Merged_Document.pdf",
-                **session.get_status()
             }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -579,7 +493,6 @@ def split_pdf(data: SplitReq):
             active_sessions[doc_id] = new_session
             filename = "CoreKit-Split-Custom.pdf"
             doc_filepaths[doc_id] = filename
-            record_audit(new_session, "Split PDF (Custom Range)", f"Pages: {data.pages}")
 
             return {
                 "status": "success",
@@ -607,7 +520,6 @@ def split_pdf(data: SplitReq):
                 active_sessions[doc_id] = new_session
                 filename = "CoreKit-Split-Part1.pdf"
                 doc_filepaths[doc_id] = filename
-                record_audit(new_session, "Split PDF (Fixed Range)", f"Per {data.per_page} pages")
 
                 return {
                     "status": "success",
@@ -625,7 +537,6 @@ def split_pdf(data: SplitReq):
 
             zip_id = str(uuid.uuid4())
             zip_sessions[zip_id] = zip_buffer.getvalue()
-            record_audit(session, "Split PDF (Fixed Range)", f"Per {data.per_page} pages, {len(parts)} files")
 
             return {
                 "status": "success",
@@ -646,11 +557,9 @@ def rotate_pdf(data: RotateReq):
     try:
         targets = parse_page_string(data.pages, len(session.doc))
         if not targets: raise ValueError("No valid pages selected")
-        session.save_snapshot()
         for idx in targets:
             session.doc[idx].set_rotation(session.doc[idx].rotation + data.angle)
-        record_audit(session, "Rotate Page", f"Target: {data.pages}, Angle: {data.angle}°")
-        return {"status": "success", **session.get_status()}
+        return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -658,20 +567,16 @@ def rotate_pdf(data: RotateReq):
 def move_page_up(data: PageReq):
     session = active_sessions.get(data.doc_id)
     if session and data.page_num > 0:
-        session.save_snapshot()
         session.doc.move_page(data.page_num, data.page_num - 1)
-        record_audit(session, "Move Page", f"Page {data.page_num + 1} moved up")
-        return {"status": "success", **session.get_status()}
+        return {"status": "success"}
     raise HTTPException(status_code=400, detail="Invalid move")
 
 @app.post("/page/move_down")
 def move_page_down(data: PageReq):
     session = active_sessions.get(data.doc_id)
     if session and data.page_num < len(session.doc) - 1:
-        session.save_snapshot()
         session.doc.move_page(data.page_num + 1, data.page_num)
-        record_audit(session, "Move Page", f"Page {data.page_num + 1} moved down")
-        return {"status": "success", **session.get_status()}
+        return {"status": "success"}
     raise HTTPException(status_code=400, detail="Invalid move")
 
 @app.post("/page/move_to")
@@ -682,13 +587,11 @@ def move_page_to(data: MoveToReq):
     if data.page_num < 0 or data.page_num >= total_pages or data.target_page < 0 or data.target_page >= total_pages:
         raise HTTPException(status_code=400, detail="Target page out of bounds")
     try:
-        session.save_snapshot()
         seq = list(range(total_pages))
         popped_page = seq.pop(data.page_num)
         seq.insert(data.target_page, popped_page)
         session.doc.select(seq)
-        record_audit(session, "Move Page", f"Page {data.page_num + 1} moved to position {data.target_page + 1}")
-        return {"status": "success", **session.get_status()}
+        return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -697,7 +600,6 @@ def add_page_numbers(data: NumberingReq):
     session = active_sessions.get(data.doc_id)
     if not session: raise HTTPException(status_code=400, detail="Invalid Document ID")
     try:
-        session.save_snapshot()
         doc = session.doc
         total_pages = len(doc)
         
@@ -763,10 +665,8 @@ def add_page_numbers(data: NumberingReq):
             
             page.insert_text(p_internal, text, fontsize=10, fontname="helv", color=(0, 0, 0), rotate=page.rotation)
             
-        record_audit(session, "Page Numbering", f"Format: {data.format}, Pos: {data.position}")
-        return {"status": "success", **session.get_status()}
+        return {"status": "success"}
     except Exception as e:
-        session.undo()
         raise HTTPException(status_code=500, detail=str(e))
 
 def _process_signature_image(image_b64: str, remove_bg: bool) -> bytes:
@@ -787,12 +687,10 @@ def add_signature(data: SignReq):
     if not session: raise HTTPException(status_code=400, detail="Invalid Document ID")
     try:
         img_bytes = _process_signature_image(data.image_b64, data.remove_bg)
-        session.save_snapshot()
         page = session.doc[data.page_num]
         rect_visual = fitz.Rect(data.norm_x * page.rect.width, data.norm_y * page.rect.height, (data.norm_x + data.norm_w) * page.rect.width, (data.norm_y + data.norm_h) * page.rect.height)
         page.insert_image(rect_visual * page.derotation_matrix, stream=img_bytes, overlay=True, rotate=page.rotation)
-        record_audit(session, "Signature", f"Page {data.page_num + 1}")
-        return {"status": "success", **session.get_status()}
+        return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -890,7 +788,6 @@ def compress_pdf(data: CompressReq):
         base_name = os.path.splitext(os.path.basename(target_path))[0]
         filename = f"{base_name}_compressed.pdf"
         doc_filepaths[result_doc_id] = filename
-        record_audit(new_session, "Compress PDF", f"Mode: {data.mode}")
 
         return {
             "status": "success",
@@ -973,7 +870,6 @@ def protect_pdf_batch(data: ProtectBatchReq):
                 garbage=3,
                 deflate=True,
             )
-            record_audit(session, "Password Protection")
 
             base_name = item.filename or doc_filepaths.get(item.doc_id, "Protected_Document.pdf")
             if not base_name.lower().endswith(".pdf"):
@@ -1042,7 +938,6 @@ def lock_pdf_batch(data: LockBatchReq):
                 garbage=3,
                 deflate=True,
             )
-            record_audit(session, "Lock Document (Read-Only)")
 
             base_name = item.filename or doc_filepaths.get(item.doc_id, "Locked_Document.pdf")
             if not base_name.lower().endswith(".pdf"):
@@ -1106,20 +1001,16 @@ def delete_page(data: DeleteReq):
     session = active_sessions.get(data.doc_id)
     if not session: raise HTTPException(status_code=400, detail="Invalid Document ID")
     try:
-        session.save_snapshot()
         if data.mode == "range":
             targets = parse_page_string(data.pages, len(session.doc))
             if not targets: raise ValueError("No valid pages selected")
             if len(targets) >= len(session.doc): raise ValueError("Cannot delete all pages in the document")
             for idx in sorted(list(targets), reverse=True): session.doc.delete_page(idx)
-            record_audit(session, "Delete Pages", f"Pages {data.pages} deleted")
         else:
             if len(session.doc) <= 1: raise ValueError("Cannot delete last page")
             session.doc.delete_page(data.page_num)
-            record_audit(session, "Delete Page", f"Page {data.page_num + 1} deleted")
-        return {"status": "success", "total_pages": len(session.doc), **session.get_status()}
+        return {"status": "success", "total_pages": len(session.doc)}
     except Exception as e:
-        session.undo()
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/system/file_info")
@@ -1136,19 +1027,6 @@ def open_link(data: OpenLinkReq):
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/doc/audit_log/{doc_id}")
-def get_document_audit_log(doc_id: str):
-    session = active_sessions.get(doc_id)
-    if not session: raise HTTPException(status_code=400, detail="Invalid Document ID")
-    try:
-        meta = session.doc.metadata or {}
-        keywords = meta.get("keywords", "") or ""
-        logs = []
-        if "CoreKit_LOG_JSON:" in keywords: logs = json.loads(keywords.split("CoreKit_LOG_JSON:")[1])
-        return {"status": "success", "data": logs}
-    except Exception as e:
-        return {"status": "success", "data": []}
 
 @app.post("/system/shutdown")
 def shutdown_engine():

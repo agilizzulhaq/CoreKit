@@ -1,4 +1,3 @@
-// frontend\src\components\Home.jsx
 import { useEffect, useRef, useState } from "react";
 
 const SECTION_KEY_MAP = [
