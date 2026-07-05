@@ -140,6 +140,11 @@ class ProtectBatchItem(BaseModel):
 class ProtectBatchReq(BaseModel):
     files: List[ProtectBatchItem]
     password: str
+class LockBatchItem(BaseModel):
+    doc_id: str
+    filename: Optional[str] = None  
+class LockBatchReq(BaseModel):
+    files: List[LockBatchItem]
 class LockReq(BaseDocReq): output_path: str
 class OpenFolderReq(BaseModel): path: str
 class QRCodeReq(BaseModel): link: str; with_logo: bool; output_path: str
@@ -1082,6 +1087,75 @@ def protect_pdf_batch(data: ProtectBatchReq):
                 "mode": "zip",
                 "zip_id": zip_id,
                 "filename": "CoreKit-Protected-Results.zip",
+                "file_count": len(results),
+            }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/security/lock_batch")
+def lock_pdf_batch(data: LockBatchReq):
+    try:
+        if not data.files:
+            raise ValueError("Tidak ada file yang dipilih")
+
+        # Permission yang diizinkan: Printing, Content Copying, Copying for Accessibility.
+        # Yang dibatasi: Commenting, Editing file content, Filling form fields, Signing.
+        perms = fitz.PDF_PERM_PRINT | fitz.PDF_PERM_COPY | fitz.PDF_PERM_ACCESSIBILITY
+
+        results = []
+        for item in data.files:
+            session = active_sessions.get(item.doc_id)
+            if not session:
+                raise ValueError(f"Invalid Document ID: {item.doc_id}")
+
+            owner_pw = ''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(16))
+            locked_bytes = session.doc.tobytes(
+                encryption=fitz.PDF_ENCRYPT_AES_256,
+                owner_pw=owner_pw,
+                user_pw="",
+                permissions=perms,
+                garbage=3,
+                deflate=True,
+            )
+            record_audit(session, "Lock Document (Read-Only)")
+
+            base_name = item.filename or doc_filepaths.get(item.doc_id, "Locked_Document.pdf")
+            if not base_name.lower().endswith(".pdf"):
+                base_name += ".pdf"
+            results.append((base_name, locked_bytes))
+
+        if len(results) == 1:
+            filename, file_bytes = results[0]
+            blob_id = str(uuid.uuid4())
+            blob_sessions[blob_id] = file_bytes
+            return {
+                "status": "success",
+                "mode": "single",
+                "blob_id": blob_id,
+                "filename": filename,
+                "file_count": 1,
+            }
+        else:
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+                used_names = set()
+                for filename, file_bytes in results:
+                    final_name = filename
+                    counter = 1
+                    while final_name in used_names:
+                        name_part, ext = os.path.splitext(filename)
+                        final_name = f"{name_part}_{counter}{ext}"
+                        counter += 1
+                    used_names.add(final_name)
+                    zipf.writestr(final_name, file_bytes)
+
+            zip_id = str(uuid.uuid4())
+            zip_sessions[zip_id] = zip_buffer.getvalue()
+            return {
+                "status": "success",
+                "mode": "zip",
+                "zip_id": zip_id,
+                "filename": "CoreKit-Locked-Results.zip",
                 "file_count": len(results),
             }
     except Exception as e:
