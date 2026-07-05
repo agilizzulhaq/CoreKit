@@ -1,4 +1,3 @@
-# engine\main.py
 import fitz
 import io
 import os
@@ -11,11 +10,9 @@ import qrcode
 import sys
 import webbrowser
 import getpass
-import shutil
 import json
 import secrets
 import zipfile
-import re
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -34,13 +31,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-EXCEL_ILLEGAL_CHARS = re.compile(r'[\000-\010]|[\013-\014]|[\016-\037]')
-
-def clean_excel_val(val):
-    if val is None or str(val).upper() == 'NULL':
-        return None  
-    return EXCEL_ILLEGAL_CHARS.sub('', str(val))
 
 # ==========================================
 # 1. STATE GLOBAL APLIKASI 
@@ -131,9 +121,6 @@ class NumberingReq(BaseDocReq):
     custom_divider: str = "dari"
     position: str = "bottom_right"
 class SignReq(BaseDocReq): page_num: int; image_b64: str; norm_x: float; norm_y: float; norm_w: float; norm_h: float; remove_bg: bool
-class AutoSignReq(BaseDocReq): pages: str; image_b64: str; norm_x: float; norm_y: float; norm_w: float; norm_h: float; remove_bg: bool
-class TextReq(BaseDocReq): page_num: int; text: str; font_size: int; color_hex: str; norm_x: float; norm_y: float; norm_w: float; norm_h: float
-class ProtectReq(BaseDocReq): password: str; output_path: str
 class ProtectBatchItem(BaseModel):
     doc_id: str
     filename: Optional[str] = None
@@ -145,33 +132,18 @@ class LockBatchItem(BaseModel):
     filename: Optional[str] = None  
 class LockBatchReq(BaseModel):
     files: List[LockBatchItem]
-class LockReq(BaseDocReq): output_path: str
 class OpenFolderReq(BaseModel): path: str
 class QRCodeReq(BaseModel):
     link: str
     with_logo: bool
 class QRScanReq(BaseModel): image_b64: str
 class OpenLinkReq(BaseModel): url: str
-class FilesToPdfReq(BaseModel): files: List[str]; output_path: Optional[str] = None
+class FilesToPdfReq(BaseModel): files: List[str]
 class FileInfoReq(BaseModel): path: str; doc_id: Optional[str] = None
 class CompressReq(BaseModel):
     doc_id: str
     mode: str
     password: Optional[str] = None
-class SqlReadReq(BaseModel): path: str
-class ExportDataReq(BaseModel): 
-    output_path: str; table_name: str; columns: list; rows: list; format: str
-    original_create: Optional[str] = None
-    original_alter: Optional[List[str]] = None
-    db_name: Optional[str] = None
-class ImportDataReq(BaseModel): file_path: str; format: str
-class TableData(BaseModel): 
-    table_name: str; columns: list; rows: list
-    original_create: Optional[str] = None
-    original_alter: Optional[List[str]] = None
-class ExportAllDataReq(BaseModel): 
-    output_path: str; tables: List[TableData]; format: str
-    db_name: Optional[str] = None
 
 
 # ==========================================
@@ -484,7 +456,7 @@ def files_to_pdf(data: FilesToPdfReq):
     try:
         new_doc = fitz.open()
         for file_path in data.files:
-            # [PERUBAHAN] Resolve doc_id ke path asli, sama seperti /tools/merge
+            # Resolve doc_id ke path asli, sama seperti /tools/merge
             target_path = doc_filepaths.get(file_path, file_path)
             ext = target_path.lower().split('.')[-1]
 
@@ -502,7 +474,7 @@ def files_to_pdf(data: FilesToPdfReq):
                 rect = fitz.Rect(50, 50, 545, 792)
                 page.insert_textbox(rect, text_content, fontsize=11, fontname="helv")
 
-        # [PERUBAHAN] Buat session in-memory, bukan simpan ke disk langsung
+        # Buat session in-memory, bukan simpan ke disk langsung
         doc_id = str(uuid.uuid4())
         session = DocumentSession(doc_bytes=new_doc.tobytes())
         new_doc.close()
@@ -532,7 +504,7 @@ def merge_pdf(data: MergeReq):
             start_idx = data.insert_page if data.insert_mode == "custom" and data.insert_page >= 0 else -1
             
             for f in data.files:
-                # [PERUBAHAN] Ambil path asli dari memory jika 'f' adalah doc_id
+                # Ambil path asli dari memory jika 'f' adalah doc_id
                 target_path = doc_filepaths.get(f, f)
                 src_doc = fitz.open(target_path)
                 
@@ -559,7 +531,7 @@ def merge_pdf(data: MergeReq):
         else:
             new_doc = fitz.open()
             for f in data.files: 
-                # [PERUBAHAN] Ambil path asli dari memory jika 'f' adalah doc_id
+                # Ambil path asli dari memory jika 'f' adalah doc_id
                 target_path = doc_filepaths.get(f, f)
                 src_doc = fitz.open(target_path)
                 
@@ -586,7 +558,6 @@ def merge_pdf(data: MergeReq):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Replace the whole /tools/split endpoint with:
 @app.post("/tools/split")
 def split_pdf(data: SplitReq):
     session = active_sessions.get(data.doc_id)
@@ -820,62 +791,9 @@ def add_signature(data: SignReq):
         page = session.doc[data.page_num]
         rect_visual = fitz.Rect(data.norm_x * page.rect.width, data.norm_y * page.rect.height, (data.norm_x + data.norm_w) * page.rect.width, (data.norm_y + data.norm_h) * page.rect.height)
         page.insert_image(rect_visual * page.derotation_matrix, stream=img_bytes, overlay=True, rotate=page.rotation)
-        record_audit(session, "Manual Signature", f"Page {data.page_num + 1}")
+        record_audit(session, "Signature", f"Page {data.page_num + 1}")
         return {"status": "success", **session.get_status()}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/tools/sign_auto")
-def add_signature_auto(data: AutoSignReq):
-    session = active_sessions.get(data.doc_id)
-    if not session: raise HTTPException(status_code=400, detail="Invalid Document ID")
-    try:
-        targets = parse_page_string(data.pages, len(session.doc))
-        if not targets: raise ValueError("No valid pages selected")
-        img_bytes = _process_signature_image(data.image_b64, data.remove_bg)
-        session.save_snapshot()
-        for idx in targets:
-            page = session.doc[idx]
-            rect_visual = fitz.Rect(data.norm_x * page.rect.width, data.norm_y * page.rect.height, (data.norm_x + data.norm_w) * page.rect.width, (data.norm_y + data.norm_h) * page.rect.height)
-            page.insert_image(rect_visual * page.derotation_matrix, stream=img_bytes, overlay=True, rotate=page.rotation)
-        record_audit(session, "Auto Signature", f"Target: {data.pages}")
-        return {"status": "success", **session.get_status()}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/tools/text")
-def add_text_to_pdf(data: TextReq):
-    session = active_sessions.get(data.doc_id)
-    if not session: raise HTTPException(status_code=400, detail="Invalid Document ID")
-    try:
-        session.save_snapshot()
-        page = session.doc[data.page_num]
-        pdf_w = page.rect.width
-        pdf_h = page.rect.height
-        
-        h = data.color_hex.lstrip('#')
-        r, g, b = tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
-        
-        visual_x = data.norm_x * pdf_w
-        visual_y = data.norm_y * pdf_h
-        
-        pdf_fontsize = data.font_size * 0.75 
-        baseline_offset = pdf_fontsize * 0.85 
-        line_height = pdf_fontsize * 1.2 
-        
-        lines = data.text.split('\n')
-        
-        for i, line in enumerate(lines):
-            current_visual_y = visual_y + baseline_offset + (i * line_height)
-            p_visual = fitz.Point(visual_x, current_visual_y)
-            p_internal = p_visual * page.derotation_matrix
-            
-            page.insert_text(p_internal, line, fontsize=pdf_fontsize, fontname="helv", color=(r, g, b), rotate=page.rotation)
-            
-        record_audit(session, "Tambah Teks", f"Halaman {data.page_num + 1}")
-        return {"status": "success", **session.get_status()}
-    except Exception as e:
-        print(f"Error in /tools/text: {str(e)}") 
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/tools/compress")
@@ -1034,17 +952,6 @@ def scan_qrcode(data: QRScanReq):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/security/protect")
-def protect_pdf(data: ProtectReq):
-    session = active_sessions.get(data.doc_id)
-    if not session: raise HTTPException(status_code=400, detail="Invalid Document ID")
-    try:
-        session.doc.save(data.output_path, encryption=fitz.PDF_ENCRYPT_AES_256, user_pw=data.password, owner_pw=data.password)
-        record_audit(session, "Password Protection")
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/security/protect_batch")
 def protect_pdf_batch(data: ProtectBatchReq):
     try:
@@ -1178,267 +1085,6 @@ def lock_pdf_batch(data: LockBatchReq):
             }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-@app.post("/security/lock")
-def lock_pdf(data: LockReq):
-    session = active_sessions.get(data.doc_id)
-    if not session: raise HTTPException(status_code=400, detail="Invalid Document ID")
-    try:
-        owner_pw = ''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(16))
-        perms = fitz.PDF_PERM_PRINT | fitz.PDF_PERM_COPY | fitz.PDF_PERM_ACCESSIBILITY
-        session.doc.save(data.output_path, encryption=fitz.PDF_ENCRYPT_AES_256, owner_pw=owner_pw, user_pw="", permissions=perms)
-        record_audit(session, "Lock Document (Read-Only)")
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-def parse_sql_values(row_str: str) -> list:
-    values, current_val, in_string, quote_char, escape_next, parens_depth = [], [], False, '', False, 0
-    for char in row_str:
-        if escape_next:
-            current_val.append(char)
-            escape_next = False
-        elif char == '\\':
-            current_val.append(char)
-            escape_next = True
-        elif in_string:
-            current_val.append(char)
-            if char == quote_char: in_string = False
-        else:
-            if char in ("'", '"'):
-                in_string, quote_char = True, char
-                current_val.append(char)
-            elif char == '(':
-                parens_depth += 1
-                current_val.append(char)
-            elif char == ')':
-                parens_depth -= 1
-                current_val.append(char)
-            elif char == ',' and parens_depth == 0:
-                val = ''.join(current_val).strip()
-                if len(val) >= 2 and val[0] in ("'", '"') and val[-1] == val[0]: val = val[1:-1]
-                values.append(val)
-                current_val = []
-            else:
-                current_val.append(char)
-    val = ''.join(current_val).strip()
-    if len(val) >= 2 and val[0] in ("'", '"') and val[-1] == val[0]: val = val[1:-1]
-    values.append(val)
-    return values
-
-@app.post("/tools/read_data_structure")
-def read_data_structure(data: SqlReadReq):
-    try:
-        ext = data.path.split('.')[-1].lower()
-        tables_dict = {}
-        db_name = None
-
-        if ext in ['xlsx', 'xls']:
-            try:
-                import openpyxl
-            except ImportError:
-                raise ValueError("Library 'openpyxl' tidak ditemukan.")
-            
-            wb = openpyxl.load_workbook(data.path, data_only=True)
-            for sheet_name in wb.sheetnames:
-                ws = wb[sheet_name]
-                rows_iter = ws.iter_rows(values_only=True)
-                try: headers = next(rows_iter)
-                except StopIteration: continue
-                
-                if not headers or all(h is None for h in headers): continue
-                columns = [str(h) if h is not None else f"Col_{i}" for i, h in enumerate(headers)]
-                parsed_rows = []
-                for row in rows_iter:
-                    if all(cell is None or str(cell).strip() == "" for cell in row): continue
-                    parsed_rows.append([str(cell) if cell is not None else 'NULL' for cell in row])
-                    
-                tables_dict[sheet_name] = {"name": sheet_name, "columns": columns, "rows": parsed_rows}
-        else:
-            with open(data.path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-
-            # Tangkap nama Database
-            db_match = re.search(r'CREATE\s+DATABASE\s+[`"\'\[]?([a-zA-Z0-9_]+)[`"\'\]]?', content, re.IGNORECASE)
-            if db_match: db_name = db_match.group(1)
-
-            # Tangkap struktur utuh CREATE TABLE
-            create_pattern = re.compile(r'CREATE\s+TABLE\s+[`"\'\[]?([a-zA-Z0-9_]+)[`"\'\]]?\s*\((.*?)\);', re.IGNORECASE | re.DOTALL)
-            for match in create_pattern.finditer(content):
-                t_name = match.group(1)
-                full_create = match.group(0)
-                col_str = match.group(2)
-                
-                raw_lines = [l.strip() for l in col_str.split('\n') if l.strip()]
-                columns = []
-                for line in raw_lines:
-                    if line.upper().startswith(('PRIMARY', 'UNIQUE', 'KEY', 'CONSTRAINT', 'FOREIGN')): continue
-                    col_match = re.match(r'[`"\'\[]?([a-zA-Z0-9_]+)[`"\'\]]?', line)
-                    if col_match: columns.append(col_match.group(1))
-                
-                tables_dict[t_name] = {"name": t_name, "columns": columns, "rows": [], "original_create": full_create, "original_alter": []}
-
-            # Tangkap struktur utuh ALTER TABLE
-            alter_pattern = re.compile(r'ALTER\s+TABLE\s+[`"\'\[]?([a-zA-Z0-9_]+)[`"\'\]]?\s+ADD\s+[^;]+;', re.IGNORECASE | re.DOTALL)
-            for match in alter_pattern.finditer(content):
-                t_name = match.group(1)
-                if t_name in tables_dict:
-                    tables_dict[t_name]["original_alter"].append(match.group(0))
-
-            # Tangkap insert records
-            insert_pattern = re.compile(r'INSERT\s+INTO\s+[`"\'\[]?([a-zA-Z0-9_]+)[`"\'\]]?(?:\s*\([^)]+\))?\s+VALUES\s*(.*?);', re.IGNORECASE | re.DOTALL)
-            for match in insert_pattern.finditer(content):
-                t_name = match.group(1)
-                values_str = match.group(2).strip()
-                if t_name in tables_dict:
-                    raw_tuples = re.split(r'\)\s*,\s*\(', values_str)
-                    if raw_tuples:
-                        raw_tuples[0] = re.sub(r'^\s*\(', '', raw_tuples[0])
-                        raw_tuples[-1] = re.sub(r'\)\s*$', '', raw_tuples[-1])
-                        
-                    parsed_rows = []
-                    # Ambil jumlah kolom yang valid dari hasil bacaan CREATE TABLE
-                    expected_cols = len(tables_dict[t_name]["columns"]) 
-                    
-                    for rt in raw_tuples: 
-                        row_vals = parse_sql_values(rt)
-                        if expected_cols > 0 and len(row_vals) != expected_cols:
-                            continue 
-                            
-                        parsed_rows.append(row_vals)
-                    tables_dict[t_name]["rows"].extend(parsed_rows)
-
-        return {"status": "success", "tables": list(tables_dict.values()), "filename": os.path.basename(data.path), "db_name": db_name}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/tools/export_data")
-def export_data(data: ExportDataReq):
-    try:
-        if data.format == "sql":
-            with open(data.output_path, 'w', encoding='utf-8') as f:
-                if data.db_name:
-                    f.write(f"create database {data.db_name};\n")
-                    f.write(f"use {data.db_name};\n")
-                
-                if data.original_create:
-                    f.write(data.original_create + "\n")
-                else:
-                    f.write(f"CREATE TABLE `{data.table_name}` (\n")
-                    cols_def = [f"`{c}` TEXT DEFAULT NULL" for c in data.columns]
-                    f.write(",\n".join(cols_def))
-                    f.write(");\n")
-
-                if data.original_alter:
-                    for alt in data.original_alter: 
-                        f.write(alt + "\n")
-
-                if data.rows:
-                    f.write("\n") # 1 baris kosong wajib sebelum blok INSERT
-                    
-                    # Membatasi 60 baris per query sesuai format sistem native
-                    chunk_size = 60
-                    for i in range(0, len(data.rows), chunk_size):
-                        chunk = data.rows[i : i + chunk_size]
-                        
-                        if i > 0:
-                            f.write("\n") # 1 baris kosong antar potongan INSERT
-                            
-                        f.write(f"INSERT INTO {data.table_name} VALUES ")
-                        values_blocks = []
-                        for row in chunk:
-                            safe_vals = []
-                            for v in row:
-                                if v is None or str(v).upper() == 'NULL': 
-                                    safe_vals.append('NULL')
-                                else:
-                                    val_esc = str(v).replace('"', '\\"')
-                                    safe_vals.append(f'"{val_esc}"')
-                            values_blocks.append(f"({','.join(safe_vals)})") 
-                        f.write(",\n".join(values_blocks) + ";\n")
-                    
-        elif data.format == "excel":
-            import openpyxl
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            ws.title = data.table_name[:31] 
-            ws.append(data.columns)
-            for row in data.rows: ws.append([clean_excel_val(v) for v in row])
-            wb.save(data.output_path)
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/tools/export_all_data")
-def export_all_data(data: ExportAllDataReq):
-    try:
-        if data.format == "sql":
-            with open(data.output_path, 'w', encoding='utf-8') as f:
-                if data.db_name:
-                    f.write(f"create database {data.db_name};\n")
-                    f.write(f"use {data.db_name};\n")
-
-                for idx, table in enumerate(data.tables):
-                    if table.original_create:
-                        f.write(table.original_create + "\n")
-                    else:
-                        f.write(f"CREATE TABLE `{table.table_name}` (\n")
-                        cols_def = [f"`{c}` TEXT DEFAULT NULL" for c in table.columns]
-                        f.write(",\n".join(cols_def))
-                        f.write(");\n")
-                    
-                    if table.original_alter:
-                        for alt in table.original_alter: 
-                            f.write(alt + "\n")
-                    
-                    if table.rows:
-                        f.write("\n") # 1 baris kosong wajib sebelum blok INSERT
-                        
-                        # Membatasi 60 baris per query sesuai format sistem native
-                        chunk_size = 60
-                        for i in range(0, len(table.rows), chunk_size):
-                            chunk = table.rows[i : i + chunk_size]
-                            
-                            if i > 0:
-                                f.write("\n") # 1 baris kosong antar potongan INSERT
-                                
-                            f.write(f"INSERT INTO {table.table_name} VALUES ")
-                            blocks = []
-                            for row in chunk:
-                                safe_vals = []
-                                for v in row:
-                                    if v is None or str(v).upper() == 'NULL': 
-                                        safe_vals.append('NULL')
-                                    else:
-                                        val_esc = str(v).replace('"', '\\"')
-                                        safe_vals.append(f'"{val_esc}"')
-                                blocks.append(f"({','.join(safe_vals)})")
-                            f.write(",\n".join(blocks) + ";\n")
-                    
-                    # Logika Pemisah Antar Tabel yang Akurat & Dinamis
-                    if idx < len(data.tables) - 1:
-                        if table.rows:
-                            f.write("\n")     # Jika tabel ada data, diakhiri 1 baris kosong
-                        elif table.original_alter:
-                            f.write("\n")     # Jika tabel ada alter, diakhiri 1 baris kosong
-                        else:
-                            f.write("\n\n")   # Jika hanya CREATE TABLE, diakhiri 2 baris kosong
-                    
-        elif data.format == "excel":
-            import openpyxl
-            wb = openpyxl.Workbook()
-            default_sheet = wb.active
-            for table in data.tables:
-                ws = wb.create_sheet(title=table.table_name[:31])
-                ws.append(table.columns)          
-                for row in table.rows: ws.append([clean_excel_val(v) for v in row])
-            if len(wb.sheetnames) > 1: wb.remove(default_sheet)
-            wb.save(data.output_path)
-
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/system/open_folder")
 def open_folder(data: OpenFolderReq):

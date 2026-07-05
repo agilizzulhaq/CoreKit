@@ -288,3 +288,41 @@ export async function generateQrCode(link, withLogo) {
 
   return await response.json();
 }
+
+export async function scanQrCode(imageB64) {
+  const response = await fetch(`${API_URL}/tools/qrscan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_b64: imageB64 }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "QR Code tidak terdeteksi pada gambar";
+
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}
+
+export async function openLink(url) {
+  const response = await fetch(`${API_URL}/system/open_link`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || "Gagal membuka link di browser");
+  }
+
+  return await response.json();
+}
