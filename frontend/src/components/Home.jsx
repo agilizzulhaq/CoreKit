@@ -20,6 +20,7 @@ export default function Home({
   triggerCompressUpload,
   triggerNumberingUpload,
   triggerProtectUpload,
+  triggerLockUpload,
 }) {
   const toolsRef = useRef(null);
   const heroRef = useRef(null);
@@ -259,10 +260,7 @@ export default function Home({
               </div>
             </div>
 
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Lock Document")}
-            >
+            <div className="card" onClick={triggerLockUpload}>
               <div className="card-icon">
                 <img src="/assets/shield-lock-fill.svg" alt="Lock Document" />
               </div>
