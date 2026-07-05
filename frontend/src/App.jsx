@@ -23,6 +23,7 @@ function App() {
   const numberingFileInputRef = useRef(null);
   const protectFileInputRef = useRef(null);
   const lockFileInputRef = useRef(null);
+  const signFileInputRef = useRef(null);
 
   // Functions to trigger file input clicks for each feature
   const triggerFilesToPdfUpload = () => {
@@ -55,6 +56,10 @@ function App() {
 
   const triggerLockUpload = () => {
     if (lockFileInputRef.current) lockFileInputRef.current.click();
+  };
+
+  const triggerSignUpload = () => {
+    if (signFileInputRef.current) signFileInputRef.current.click();
   };
 
   // Handlers for file input changes to set the selected files and open the corresponding workspace modal
@@ -134,6 +139,16 @@ function App() {
       setFeatureFiles(files);
       setActiveModal("lock");
       setStatusMsg(`Memilih ${files.length} file untuk dikunci`);
+    }
+    e.target.value = null;
+  };
+
+  const handleSignFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setFeatureFiles(files);
+      setActiveModal("sign");
+      setStatusMsg(`Memilih ${files[0].name} untuk ditandatangani`);
     }
     e.target.value = null;
   };
@@ -225,6 +240,14 @@ function App() {
             style={{ display: "none" }}
           />
 
+          <input
+            type="file"
+            accept="application/pdf"
+            ref={signFileInputRef}
+            onChange={handleSignFileChange}
+            style={{ display: "none" }}
+          />
+
           <Home
             activeScreen={activeScreen}
             activeMenu={activeMenu}
@@ -237,6 +260,7 @@ function App() {
             triggerNumberingUpload={triggerNumberingUpload}
             triggerProtectUpload={triggerProtectUpload}
             triggerLockUpload={triggerLockUpload}
+            triggerSignUpload={triggerSignUpload}
           />
 
           <Workspace

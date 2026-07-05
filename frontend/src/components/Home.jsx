@@ -21,6 +21,7 @@ export default function Home({
   triggerNumberingUpload,
   triggerProtectUpload,
   triggerLockUpload,
+  triggerSignUpload,
 }) {
   const toolsRef = useRef(null);
   const heroRef = useRef(null);
@@ -208,45 +209,13 @@ export default function Home({
               </div>
             </div>
 
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Manual Signature")}
-            >
+            <div className="card" onClick={triggerSignUpload}>
               <div className="card-icon">
-                <img src="/assets/vector-pen.svg" alt="Manual Signature" />
+                <img src="/assets/vector-pen.svg" alt="Signature" />
               </div>
               <div className="card-text">
-                <h3>Manual Signature</h3>
-                <p>Draw or upload signature manually</p>
-              </div>
-            </div>
-
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Auto Signature")}
-            >
-              <div className="card-icon">
-                <img
-                  src="/assets/lightning-charge-fill.svg"
-                  alt="Auto Signature"
-                />
-              </div>
-              <div className="card-text">
-                <h3>Auto Signature</h3>
-                <p>Batch apply signature to multiple pages</p>
-              </div>
-            </div>
-
-            <div
-              className="card"
-              onClick={(e) => handleFeatureClick(e, "Text Editor")}
-            >
-              <div className="card-icon">
-                <img src="/assets/textarea-t.svg" alt="Text Editor" />
-              </div>
-              <div className="card-text">
-                <h3>Text Editor</h3>
-                <p>Insert custom text into your document</p>
+                <h3>Signature</h3>
+                <p>Add your signature to the document</p>
               </div>
             </div>
 

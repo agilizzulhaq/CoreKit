@@ -175,6 +175,51 @@ export async function numberPages(docId, options) {
   return await response.json();
 }
 
+export async function signDocument(
+  docId,
+  pageNum,
+  imageB64,
+  normX,
+  normY,
+  normW,
+  normH,
+  removeBg,
+) {
+  const response = await fetch(`${API_URL}/tools/sign`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      doc_id: docId,
+      page_num: pageNum,
+      image_b64: imageB64,
+      norm_x: normX,
+      norm_y: normY,
+      norm_w: normW,
+      norm_h: normH,
+      remove_bg: removeBg,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let errorMessage = "Gagal menerapkan tanda tangan";
+
+    if (Array.isArray(err.detail)) {
+      errorMessage = err.detail.map((e) => e.msg).join(", ");
+    } else if (err.detail) {
+      errorMessage = err.detail;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}
+
+export function getRenderUrl(docId, pageIndex, zoom = 1.5) {
+  return `${API_URL}/doc/render/${docId}/${pageIndex}?zoom=${zoom}`;
+}
+
 export async function protectDocuments(fileEntries, password) {
   const response = await fetch(`${API_URL}/security/protect_batch`, {
     method: "POST",

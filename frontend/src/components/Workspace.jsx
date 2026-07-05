@@ -7,6 +7,7 @@ import CompressWorkspace from "./workspace/CompressWorkspace";
 import PageNumberingWorkspace from "./workspace/PageNumberingWorkspace";
 import PasswordProtectionWorkspace from "./workspace/PasswordProtectionWorkspace";
 import LockDocumentWorkspace from "./workspace/LockDocumentWorkspace";
+import SignatureWorkspace from "./workspace/SignatureWorkspace";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -60,6 +61,8 @@ export default function Workspace({
             closeModal={closeModal}
           />
         );
+      case "sign":
+        return <SignatureWorkspace files={files} closeModal={closeModal} />;
       default:
         return (
           <div className="workspace-empty">
