@@ -1,4 +1,4 @@
-import { Controller, Post, UseInterceptors, UploadedFile, HttpException, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, HttpException, HttpStatus } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -28,17 +28,17 @@ export class AppController {
       }),
     }),
   )
-  async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
     console.log(`File tersimpan di: ${file.path}`); 
     
     const absolutePath = path.resolve(file.path);
-    const password = req.body.password; // Ambil password dari body (karena dikirim via FormData)
+    // const password = req.body.password; // Ambil password dari body (karena dikirim via FormData)
 
     try {
       const bodyPayload: any = { path: absolutePath };
-      if (password) {
-        bodyPayload.password = password; // Sertakan password jika ada
-      }
+      // if (password) {
+      //   bodyPayload.password = password; // Sertakan password jika ada
+      // }
 
       const engineResponse = await fetch('http://127.0.0.1:8000/doc/open', {
         method: 'POST',
