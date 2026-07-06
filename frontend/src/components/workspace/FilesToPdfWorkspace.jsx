@@ -96,7 +96,7 @@ export default function FilesToPdfWorkspace({ files, setFiles, closeModal }) {
     try {
       const uploadedFiles = [];
       for (const file of files) {
-        const uploadRes = await uploadDocument(file);
+        const uploadRes = await uploadDocument(file, file.password);
         const actualDocId = uploadRes.engineState?.doc_id;
         if (!actualDocId) {
           throw new Error(
@@ -237,7 +237,11 @@ export default function FilesToPdfWorkspace({ files, setFiles, closeModal }) {
         >
           <label
             htmlFor="output-filename-ftp"
-            style={{ fontSize: "14px", fontWeight: "500", color: "#333" }}
+            style={{
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "var(--text-primary)",
+            }}
           >
             Simpan hasil konversi sebagai:
           </label>
@@ -245,8 +249,8 @@ export default function FilesToPdfWorkspace({ files, setFiles, closeModal }) {
             style={{
               display: "flex",
               alignItems: "center",
-              background: "#fff",
-              border: "1px solid #ccc",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
               borderRadius: "6px",
               padding: "4px 12px",
             }}
@@ -262,11 +266,17 @@ export default function FilesToPdfWorkspace({ files, setFiles, closeModal }) {
                 flexGrow: 1,
                 padding: "8px 0",
                 fontSize: "14px",
+                background: "transparent",
+                color: "var(--text-primary)",
               }}
               placeholder="Nama file"
             />
             <span
-              style={{ color: "#666", fontSize: "14px", userSelect: "none" }}
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: "14px",
+                userSelect: "none",
+              }}
             >
               .pdf
             </span>

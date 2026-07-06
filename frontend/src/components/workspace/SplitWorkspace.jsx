@@ -24,7 +24,10 @@ export default function SplitWorkspace({ files, closeModal }) {
     const renderAllPages = async () => {
       try {
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pdf = await pdfjsLib.getDocument({
+          data: arrayBuffer,
+          password: file.password || "",
+        }).promise;
         const total = pdf.numPages;
 
         for (let i = 1; i <= total; i++) {
@@ -116,7 +119,7 @@ export default function SplitWorkspace({ files, closeModal }) {
 
     setIsProcessing(true);
     try {
-      const uploadRes = await uploadDocument(file);
+      const uploadRes = await uploadDocument(file, file.password);
       const docId = uploadRes.engineState?.doc_id;
       if (!docId) throw new Error("Gagal mendapatkan doc_id dari server.");
 
@@ -275,7 +278,7 @@ export default function SplitWorkspace({ files, closeModal }) {
             <div
               style={{
                 fontSize: "13px",
-                color: "#6b7280",
+                color: "var(--text-secondary)",
                 marginBottom: "12px",
                 textAlign: "center",
               }}
@@ -295,7 +298,11 @@ export default function SplitWorkspace({ files, closeModal }) {
             >
               <label
                 htmlFor="split-range-input"
-                style={{ fontSize: "14px", fontWeight: "500", color: "#333" }}
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  color: "var(--text-primary)",
+                }}
               >
                 Split into page ranges of
               </label>

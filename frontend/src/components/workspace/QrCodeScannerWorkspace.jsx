@@ -100,7 +100,7 @@ export default function QrCodeScannerWorkspace({ closeModal }) {
         {previewUrl ? (
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               padding: "24px",
               borderRadius: "12px",
               boxShadow: "0 10px 20px rgba(0,0,0,0.08)",
@@ -189,18 +189,22 @@ export default function QrCodeScannerWorkspace({ closeModal }) {
             }}
           >
             <label
-              style={{ fontSize: "14px", fontWeight: "500", color: "#333" }}
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "var(--text-primary)",
+              }}
             >
               Hasil pemindaian:
             </label>
             <div
               style={{
-                background: "#f0f8ff",
-                border: "1px solid #bae6fd",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
                 borderRadius: "6px",
                 padding: "10px 12px",
                 fontSize: "13px",
-                color: "#0369a1",
+                color: "var(--text-primary)",
                 wordBreak: "break-all",
                 maxHeight: "120px",
                 overflowY: "auto",

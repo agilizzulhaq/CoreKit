@@ -15,8 +15,9 @@ export default function SignatureWorkspace({ files, closeModal }) {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // signatureImage now also stores the natural aspect ratio (height / width)
   const [signatureImage, setSignatureImage] = useState(null);
-  const [removeBg, setRemoveBg] = useState(true);
+  const [removeBg, setRemoveBg] = useState(false);
   const [sigBox, setSigBox] = useState({
     normX: 0.35,
     normY: 0.75,
@@ -37,7 +38,7 @@ export default function SignatureWorkspace({ files, closeModal }) {
 
     const initDoc = async () => {
       try {
-        const uploadRes = await uploadDocument(file);
+        const uploadRes = await uploadDocument(file, file.password);
         if (!isMounted) return;
         const id = uploadRes.engineState?.doc_id;
         const total = uploadRes.engineState?.total_pages;
@@ -96,8 +97,43 @@ export default function SignatureWorkspace({ files, closeModal }) {
     if (!uploadedFile) return;
     const reader = new FileReader();
     reader.onload = () => {
-      setSignatureImage({ dataUrl: reader.result });
-      setSigBox({ normX: 0.35, normY: 0.75, normW: 0.28, normH: 0.12 });
+      const probeImg = new Image();
+      probeImg.onload = () => {
+        const aspect =
+          probeImg.naturalWidth > 0
+            ? probeImg.naturalHeight / probeImg.naturalWidth
+            : 1.0;
+
+        setSignatureImage({ dataUrl: reader.result, aspect });
+        setRemoveBg(false);
+
+        // Ambil rasio dari kontainer PDF (Lebar / Tinggi)
+        let containerRatio = 1;
+        if (wrapperRef.current) {
+          const rect = wrapperRef.current.getBoundingClientRect();
+          if (rect.height > 0) {
+            containerRatio = rect.width / rect.height;
+          }
+        }
+
+        // Definisikan lebar default kotak (misal 25% dari lebar halaman)
+        const defaultW = 0.25;
+
+        // KALKULASI BARU: Kalikan dengan containerRatio agar tidak gepeng di awal
+        const defaultH = clamp(defaultW * aspect * containerRatio, 0.02, 0.9);
+
+        // Hitung koordinat X dan Y agar posisi kotak berada tepat di tengah halaman
+        const centerX = (1 - defaultW) / 2;
+        const centerY = (1 - defaultH) / 2;
+
+        setSigBox({
+          normX: centerX,
+          normY: centerY,
+          normW: defaultW,
+          normH: defaultH,
+        });
+      };
+      probeImg.src = reader.result;
     };
     reader.readAsDataURL(uploadedFile);
     e.target.value = null;
@@ -150,11 +186,23 @@ export default function SignatureWorkspace({ files, closeModal }) {
         normY: clamp(state.startNormY + dy, 0, 1 - prev.normH),
       }));
     } else if (state.mode === "resize") {
-      setSigBox((prev) => ({
-        ...prev,
-        normW: clamp(state.startNormW + dx, 0.03, 1 - prev.normX),
-        normH: clamp(state.startNormH + dy, 0.03, 1 - prev.normY),
-      }));
+      const aspect = signatureImage?.aspect || 0.4;
+      const rawDelta = Math.abs(dx) >= Math.abs(dy) ? dx : dy;
+
+      setSigBox((prev) => {
+        let newNormW = clamp(state.startNormW + rawDelta, 0.03, 1 - prev.normX);
+        let newNormH = clamp(
+          (newNormW * state.wrapperWidth * aspect) / state.wrapperHeight,
+          0.02,
+          1 - prev.normY,
+        );
+        newNormW = clamp(
+          (newNormH * state.wrapperHeight) / (aspect * state.wrapperWidth),
+          0.03,
+          1 - prev.normX,
+        );
+        return { ...prev, normW: newNormW, normH: newNormH };
+      });
     }
   };
 
@@ -169,20 +217,7 @@ export default function SignatureWorkspace({ files, closeModal }) {
       window.removeEventListener("mousemove", handleWindowMouseMove);
       window.removeEventListener("mouseup", handleWindowMouseUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleSizeSliderChange = (e) => {
-    const newNormW = Number(e.target.value) / 100;
-    setSigBox((prev) => {
-      const aspect = prev.normW > 0 ? prev.normH / prev.normW : 0.4;
-      return {
-        ...prev,
-        normW: newNormW,
-        normH: clamp(newNormW * aspect, 0.02, 1 - prev.normY),
-      };
-    });
-  };
 
   const handleApply = async () => {
     if (!signatureImage) {
@@ -230,230 +265,201 @@ export default function SignatureWorkspace({ files, closeModal }) {
     : null;
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        background: "#fdfdfd",
-      }}
-    >
-      <div className="sign-header">
-        <h3>Signature — {file?.name}</h3>
-      </div>
-
-      <div className="sign-toolbar">
-        <div className="toolbar-center">
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            ref={fileInputRef}
-            onChange={handleSignatureUpload}
-            style={{ display: "none" }}
-          />
-          <button
-            className="btn btn-primary btn-sm-pad"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {signatureImage ? "Ganti Gambar" : "Unggah Tanda Tangan"}
-          </button>
-
-          <div className="tool-divider"></div>
-
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              fontSize: "0.85rem",
-              color: "#4b5563",
-              cursor: signatureImage ? "pointer" : "not-allowed",
-              opacity: signatureImage ? 1 : 0.5,
-            }}
-          >
+    <div className="merge-workspace-layout" ref={containerRef}>
+      <div className="merge-preview-area sign-preview-area">
+        <div className="sign-preview-topbar">
+          <div className="page-input-wrapper">
+            <button
+              className="page-btn"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={isLoadingDoc || currentPage <= 1}
+              title="Halaman sebelumnya"
+            >
+              ‹
+            </button>
             <input
-              type="checkbox"
-              checked={removeBg}
-              disabled={!signatureImage}
-              onChange={(e) => setRemoveBg(e.target.checked)}
+              id="sign-page-input"
+              type="text"
+              value={pageInputValue}
+              onChange={(e) => setPageInputValue(e.target.value)}
+              onBlur={handlePageInputCommit}
+              onKeyDown={(e) => e.key === "Enter" && handlePageInputCommit()}
             />
-            Hapus latar belakang putih
-          </label>
-
-          {signatureImage && (
-            <>
-              <div className="tool-divider"></div>
-              <span className="toolbar-label">Ukuran</span>
-              <input
-                id="sign-size-slider"
-                type="range"
-                min="10"
-                max="70"
-                value={Math.round(sigBox.normW * 100)}
-                onChange={handleSizeSliderChange}
-                style={{ width: "100px" }}
-              />
-            </>
-          )}
-        </div>
-
-        <div className="page-input-wrapper">
-          <button
-            className="page-btn"
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={isLoadingDoc || currentPage <= 1}
-            title="Halaman sebelumnya"
-          >
-            ‹
-          </button>
-          <input
-            id="sign-page-input"
-            type="text"
-            value={pageInputValue}
-            onChange={(e) => setPageInputValue(e.target.value)}
-            onBlur={handlePageInputCommit}
-            onKeyDown={(e) => e.key === "Enter" && handlePageInputCommit()}
-          />
-          <span>dari {totalPages || "..."}</span>
-          <button
-            className="page-btn"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={isLoadingDoc || currentPage >= totalPages}
-            title="Halaman berikutnya"
-          >
-            ›
-          </button>
-        </div>
-      </div>
-
-      <div className="sign-workspace" style={{ position: "relative" }}>
-        {isLoadingDoc ? (
-          <div className="rotate-loading-text">Memuat dokumen PDF...</div>
-        ) : (
-          <div
-            className="sign-pdf-wrapper"
-            ref={wrapperRef}
-            style={{ height: `${70 * zoomLevel}vh` }}
-          >
-            {renderSrc && (
-              <img
-                id="sign-pdf-preview"
-                src={renderSrc}
-                alt={`Halaman ${currentPage}`}
-              />
-            )}
-
-            {signatureImage && (
-              <div
-                className="draggable-sig"
-                onMouseDown={handleBoxMouseDown}
-                style={{
-                  left: `${sigBox.normX * 100}%`,
-                  top: `${sigBox.normY * 100}%`,
-                  width: `${sigBox.normW * 100}%`,
-                  height: `${sigBox.normH * 100}%`,
-                }}
-              >
-                <img
-                  src={signatureImage.dataUrl}
-                  alt="Tanda Tangan"
-                  draggable={false}
-                  className={removeBg ? "transparent-preview" : ""}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    pointerEvents: "none",
-                  }}
-                />
-                <div
-                  onMouseDown={handleResizeMouseDown}
-                  title="Ubah ukuran"
-                  style={{
-                    position: "absolute",
-                    right: "-7px",
-                    bottom: "-7px",
-                    width: "14px",
-                    height: "14px",
-                    borderRadius: "50%",
-                    background: "var(--primary)",
-                    border: "2px solid white",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                    cursor: "nwse-resize",
-                  }}
-                />
-              </div>
-            )}
+            <span>dari {totalPages || "..."}</span>
+            <button
+              className="page-btn"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={isLoadingDoc || currentPage >= totalPages}
+              title="Halaman berikutnya"
+            >
+              ›
+            </button>
           </div>
-        )}
+        </div>
 
-        <div className="sign-float-zoom">
-          <button
-            className="float-btn"
-            onClick={() => setZoomLevel((z) => clamp(z - 0.1, 0.5, 2))}
-            title="Zoom Out"
-          >
-            <img src="/assets/zoom-out.svg" alt="Zoom Out" />
-          </button>
-          <span id="sign-zoom-label">{Math.round(zoomLevel * 100)}%</span>
-          <button
-            className="float-btn"
-            onClick={() => setZoomLevel((z) => clamp(z + 0.1, 0.5, 2))}
-            title="Zoom In"
-          >
-            <img src="/assets/zoom-in.svg" alt="Zoom In" />
-          </button>
-          <div className="float-divider"></div>
-          <button
-            className={`float-btn ${isFullscreen ? "active" : ""}`}
-            onClick={toggleFullscreen}
-            title={isFullscreen ? "Keluar Fullscreen" : "Fullscreen"}
-          >
-            <img
-              src={
-                isFullscreen
-                  ? "/assets/fullscreen-exit.svg"
-                  : "/assets/fullscreen.svg"
-              }
-              alt="Fullscreen"
-            />
-          </button>
+        <div className="sign-preview-canvas">
+          {isLoadingDoc ? (
+            <div className="rotate-loading-text">Memuat dokumen PDF...</div>
+          ) : (
+            <div
+              className="sign-pdf-wrapper"
+              ref={wrapperRef}
+              style={{ height: `${70 * zoomLevel}vh` }}
+            >
+              {renderSrc && (
+                <img
+                  id="sign-pdf-preview"
+                  src={renderSrc}
+                  alt={`Halaman ${currentPage}`}
+                />
+              )}
+
+              {signatureImage && (
+                <div
+                  className="draggable-sig"
+                  onMouseDown={handleBoxMouseDown}
+                  style={{
+                    left: `${sigBox.normX * 100}%`,
+                    top: `${sigBox.normY * 100}%`,
+                    width: `${sigBox.normW * 100}%`,
+                    height: `${sigBox.normH * 100}%`,
+                  }}
+                >
+                  <img
+                    src={signatureImage.dataUrl}
+                    alt="Tanda Tangan"
+                    draggable={false}
+                    className={removeBg ? "transparent-preview" : ""}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      pointerEvents: "none",
+                    }}
+                  />
+                  <div
+                    onMouseDown={handleResizeMouseDown}
+                    title="Ubah ukuran"
+                    style={{
+                      position: "absolute",
+                      right: "-7px",
+                      bottom: "-7px",
+                      width: "14px",
+                      height: "14px",
+                      borderRadius: "50%",
+                      background: "var(--primary)",
+                      border: "2px solid var(--surface)",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                      cursor: "nwse-resize",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="sign-float-zoom">
+            <button
+              className="float-btn"
+              onClick={() => setZoomLevel((z) => clamp(z - 0.1, 0.5, 2))}
+              title="Zoom Out"
+            >
+              <img src="/assets/zoom-out.svg" alt="Zoom Out" />
+            </button>
+            <span id="sign-zoom-label">{Math.round(zoomLevel * 100)}%</span>
+            <button
+              className="float-btn"
+              onClick={() => setZoomLevel((z) => clamp(z + 0.1, 0.5, 2))}
+              title="Zoom In"
+            >
+              <img src="/assets/zoom-in.svg" alt="Zoom In" />
+            </button>
+            <div className="float-divider"></div>
+            <button
+              className={`float-btn ${isFullscreen ? "active" : ""}`}
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Keluar Fullscreen" : "Fullscreen"}
+            >
+              <img
+                src={
+                  isFullscreen
+                    ? "/assets/fullscreen-exit.svg"
+                    : "/assets/fullscreen.svg"
+                }
+                alt="Fullscreen"
+              />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "14px 25px",
-          background: "#f9fafb",
-          borderTop: "1px solid #e5e7eb",
-        }}
-      >
-        <span style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-          {appliedCount > 0
-            ? `${appliedCount} tanda tangan telah diterapkan. Pindah halaman lalu klik "Terapkan" lagi untuk memakai tanda tangan yang sama.`
-            : 'Unggah gambar, atur posisi & ukuran, lalu klik "Terapkan ke Halaman Ini".'}
-        </span>
+      {/* --- SIDEBAR AREA --- */}
+      <div className="merge-action-sidebar">
+        <h2>Signature</h2>
+        <p className="sign-file-name">{file?.name}</p>
 
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            className="btn btn-primary"
-            onClick={handleApply}
-            disabled={isApplying || isLoadingDoc || !signatureImage}
-          >
-            {isApplying ? "Menerapkan..." : "Terapkan ke Halaman Ini"}
-          </button>
-          <button
-            className="btn-action-big"
-            style={{ padding: "10px 24px", fontSize: "1rem" }}
-            onClick={handleFinishDownload}
-            disabled={isLoadingDoc || appliedCount === 0}
-          >
-            Selesai & Unduh PDF
-          </button>
-        </div>
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          ref={fileInputRef}
+          onChange={handleSignatureUpload}
+          style={{ display: "none" }}
+        />
+
+        <button
+          type="button"
+          className="btn-upload-sign"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <img src="/assets/vector-pen.svg" alt="" className="dropzone-icon" />
+          <span>
+            {signatureImage ? "Ganti Tanda Tangan" : "Unggah Tanda Tangan"}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className={`btn-toggle-bg ${removeBg ? "is-active" : ""}`}
+          disabled={!signatureImage}
+          onClick={() => setRemoveBg((v) => !v)}
+        >
+          {removeBg ? "Kembalikan Tanda Tangan" : "Hapus Latar Belakang Putih"}
+        </button>
+
+        {/* Tombol Terapkan: Diberikan marginTop 12px agar ada jarak dengan tombol/teks di atasnya */}
+        <button
+          className="btn btn-primary"
+          style={{ padding: "12px", marginTop: "12px", width: "100%" }}
+          onClick={handleApply}
+          disabled={isApplying || isLoadingDoc || !signatureImage}
+        >
+          {isApplying ? "Menerapkan..." : "Terapkan ke Halaman Ini"}
+        </button>
+
+        <div className="sidebar-spacer"></div>
+
+        {/* Tombol Download dipindahkan ke sini (Tepat di bawah tombol Terapkan) */}
+        <button
+          className="btn-download-float"
+          style={{
+            position: "static",
+            width: "100%",
+            marginTop: "12px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onClick={handleFinishDownload}
+          disabled={isLoadingDoc || appliedCount === 0}
+          title="Selesai & Unduh PDF"
+        >
+          Selesai & Unduh PDF
+          <img
+            src="/assets/arrow-right-circle.svg"
+            alt=""
+            className="icon-merge-btn"
+            style={{ marginLeft: "8px" }}
+          />
+        </button>
       </div>
     </div>
   );

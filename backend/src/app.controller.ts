@@ -1,4 +1,5 @@
-import { Controller, Post, UseInterceptors, UploadedFile, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, HttpException, HttpStatus, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
@@ -27,22 +28,30 @@ export class AppController {
       }),
     }),
   )
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
     console.log(`File tersimpan di: ${file.path}`); 
     
     const absolutePath = path.resolve(file.path);
+    const password = req.body.password; // Ambil password dari body (karena dikirim via FormData)
 
     try {
+      const bodyPayload: any = { path: absolutePath };
+      if (password) {
+        bodyPayload.password = password; // Sertakan password jika ada
+      }
+
       const engineResponse = await fetch('http://127.0.0.1:8000/doc/open', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ path: absolutePath }),
+        body: JSON.stringify(bodyPayload), // Gunakan payload yang sudah berisi password
       });
 
       if (!engineResponse.ok) {
-        throw new Error(`Engine error: ${engineResponse.statusText}`);
+        // Tambahkan log untuk debug jika engine mengembalikan error
+        const errorData = await engineResponse.json().catch(() => ({}));
+        throw new Error(errorData.detail || engineResponse.statusText);
       }
 
       const engineData = await engineResponse.json();

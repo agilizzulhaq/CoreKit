@@ -154,7 +154,7 @@ export default function LockDocumentWorkspace({ files, setFiles, closeModal }) {
     try {
       const fileEntries = [];
       for (const file of files) {
-        const uploadRes = await uploadDocument(file);
+        const uploadRes = await uploadDocument(file, file.password);
         const actualDocId = uploadRes.engineState?.doc_id;
         if (!actualDocId) {
           throw new Error(
@@ -284,7 +284,7 @@ export default function LockDocumentWorkspace({ files, setFiles, closeModal }) {
           style={{
             fontSize: "14px",
             fontWeight: "600",
-            color: "#333",
+            color: "var(--text-primary)",
             marginBottom: "8px",
             display: "block",
           }}
@@ -318,7 +318,7 @@ export default function LockDocumentWorkspace({ files, setFiles, closeModal }) {
         <div
           style={{
             fontSize: "13px",
-            color: "#6b7280",
+            color: "var(--text-secondary)",
             marginBottom: "12px",
             textAlign: "center",
           }}
