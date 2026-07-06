@@ -46,12 +46,12 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
       ? `${filename.trim()}.png`
       : "LUNPIA_QRCode.png";
 
-    const link = document.createElement("a");
-    link.href = qrResult.image_b64;
-    link.download = finalFilename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    const linkElement = document.createElement("a");
+    linkElement.href = qrResult.image_b64;
+    linkElement.download = finalFilename;
+    document.body.appendChild(linkElement);
+    linkElement.click();
+    linkElement.remove();
   };
 
   return (
@@ -69,7 +69,7 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
         ) : qrResult ? (
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               padding: "24px",
               borderRadius: "12px",
               boxShadow: "0 10px 20px rgba(0,0,0,0.08)",
@@ -84,19 +84,19 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
           </div>
         ) : (
           <div
-            style={{
-              textAlign: "center",
-              color: "#9ca3af",
-            }}
+            className="file-dropzone p-30"
+            style={{ maxWidth: "360px", cursor: "default" }}
           >
             <img
               src="/assets/qr-code.svg"
               alt="QR Code"
-              style={{ width: "72px", opacity: 0.4, marginBottom: "12px" }}
+              className="dropzone-icon"
+              style={{ opacity: 0.5 }}
             />
-            <p style={{ fontSize: "0.95rem" }}>
-              Masukkan link di sisi kanan, lalu klik "Generate QR Code"
-            </p>
+            <div className="dropzone-title">Pratinjau QR Code</div>
+            <span className="dropzone-subtitle">
+              Masukkan link dan klik "Generate" untuk melihat hasil di sini
+            </span>
           </div>
         )}
       </div>
@@ -104,8 +104,19 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
       <div className="merge-action-sidebar">
         <h2>QR Code Generator</h2>
 
-        <div className="form-group" style={{ marginBottom: "18px" }}>
-          <label htmlFor="qr-link-input">Link / URL:</label>
+        <div className="form-group" style={{ marginBottom: "16px" }}>
+          <label
+            htmlFor="qr-link-input"
+            style={{
+              fontSize: "14px",
+              fontWeight: "500",
+              color: "var(--text-primary)",
+              marginBottom: "8px",
+              display: "block",
+            }}
+          >
+            Link / URL:
+          </label>
           <input
             id="qr-link-input"
             type="text"
@@ -113,14 +124,19 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder="https://contoh.com"
+            style={{
+              background: "var(--surface)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border)",
+            }}
           />
         </div>
 
         <label
           style={{
             fontSize: "14px",
-            fontWeight: "600",
-            color: "#333",
+            fontWeight: "500",
+            color: "var(--text-primary)",
             marginBottom: "8px",
             display: "block",
           }}
@@ -128,12 +144,21 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
           Jenis QR Code:
         </label>
 
-        <div className="compression-options" style={{ marginBottom: "10px" }}>
+        <div className="compression-options" style={{ marginBottom: "16px" }}>
           {QR_TYPES.map((type) => (
             <label
               key={type.value}
               className="compression-card"
               htmlFor={`qr-type-${type.value}`}
+              style={{
+                // Menyesuaikan background & border berdasarkan status aktif
+                background:
+                  qrType === type.value
+                    ? "rgba(0, 120, 215, 0.1)"
+                    : "var(--surface)",
+                borderColor:
+                  qrType === type.value ? "var(--primary)" : "var(--border)",
+              }}
             >
               <input
                 type="radio"
@@ -143,8 +168,23 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
                 onChange={() => setQrType(type.value)}
               />
               <div className="cc-content">
-                <div className="cc-title">{type.title}</div>
-                <div className="cc-desc">{type.desc}</div>
+                <div
+                  className="cc-title"
+                  style={{
+                    color:
+                      qrType === type.value
+                        ? "var(--primary)"
+                        : "var(--text-primary)",
+                  }}
+                >
+                  {type.title}
+                </div>
+                <div
+                  className="cc-desc"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {type.desc}
+                </div>
               </div>
             </label>
           ))}
@@ -172,7 +212,11 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
           >
             <label
               htmlFor="qr-filename-input"
-              style={{ fontSize: "14px", fontWeight: "500", color: "#333" }}
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "var(--text-primary)",
+              }}
             >
               Simpan hasil sebagai:
             </label>
@@ -180,8 +224,8 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                background: "#fff",
-                border: "1px solid #ccc",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
                 borderRadius: "6px",
                 padding: "4px 12px",
               }}
@@ -197,11 +241,17 @@ export default function QrCodeGeneratorWorkspace({ closeModal }) {
                   flexGrow: 1,
                   padding: "8px 0",
                   fontSize: "14px",
+                  background: "transparent",
+                  color: "var(--text-primary)",
                 }}
                 placeholder="Nama file"
               />
               <span
-                style={{ color: "#666", fontSize: "14px", userSelect: "none" }}
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "14px",
+                  userSelect: "none",
+                }}
               >
                 .png
               </span>

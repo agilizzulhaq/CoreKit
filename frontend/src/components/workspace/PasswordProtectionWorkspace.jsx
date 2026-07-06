@@ -158,7 +158,7 @@ export default function PasswordProtectionWorkspace({
     try {
       const fileEntries = [];
       for (const file of files) {
-        const uploadRes = await uploadDocument(file);
+        const uploadRes = await uploadDocument(file, file.password);
         const actualDocId = uploadRes.engineState?.doc_id;
         if (!actualDocId) {
           throw new Error(
@@ -297,8 +297,8 @@ export default function PasswordProtectionWorkspace({
             style={{
               display: "flex",
               alignItems: "center",
-              background: "#fff",
-              border: "1px solid #ccc",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
               borderRadius: "6px",
               padding: "0 8px",
             }}
@@ -315,6 +315,8 @@ export default function PasswordProtectionWorkspace({
                 flexGrow: 1,
                 padding: "10px 4px",
                 fontSize: "14px",
+                background: "transparent",
+                color: "var(--text-primary)",
               }}
             />
             <button
@@ -324,7 +326,7 @@ export default function PasswordProtectionWorkspace({
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                color: "#6b7280",
+                color: "var(--text-secondary)",
                 fontSize: "13px",
                 fontWeight: "600",
                 padding: "4px 6px",
@@ -337,21 +339,44 @@ export default function PasswordProtectionWorkspace({
 
         <div className="form-group" style={{ marginBottom: "8px" }}>
           <label htmlFor="protect-password-confirm">Konfirmasi Password:</label>
-          <input
-            id="protect-password-confirm"
-            type={showPassword ? "text" : "password"}
-            className="form-control"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Ulangi password"
+          <div
             style={{
-              borderColor: passwordMismatch ? "var(--danger)" : undefined,
+              display: "flex",
+              alignItems: "center",
+              background: "var(--surface)",
+              border: passwordMismatch
+                ? "1px solid var(--danger)"
+                : "1px solid var(--border)",
+              borderRadius: "6px",
+              padding: "0 8px",
             }}
-          />
+          >
+            <input
+              id="protect-password-confirm"
+              type={showPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Ulangi password"
+              style={{
+                border: "none",
+                outline: "none",
+                flexGrow: 1,
+                padding: "10px 4px",
+                fontSize: "14px",
+                background: "transparent",
+                color: "var(--text-primary)",
+                width: "100%",
+              }}
+            />
+          </div>
           {passwordMismatch && (
             <span
               className="form-text-muted"
-              style={{ color: "var(--danger)" }}
+              style={{
+                color: "var(--danger)",
+                display: "block",
+                marginTop: "6px",
+              }}
             >
               Password tidak cocok
             </span>
@@ -363,7 +388,7 @@ export default function PasswordProtectionWorkspace({
         <div
           style={{
             fontSize: "13px",
-            color: "#6b7280",
+            color: "var(--text-secondary)",
             marginBottom: "12px",
             textAlign: "center",
           }}

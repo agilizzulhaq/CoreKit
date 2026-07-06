@@ -1,9 +1,13 @@
 export const API_URL = "http://127.0.0.1:8000";
 export const GATEWAY_URL = "http://localhost:3000";
 
-export async function uploadDocument(file) {
+export async function uploadDocument(file, password = "") {
   const formData = new FormData();
   formData.append("file", file);
+
+  if (password) {
+    formData.append("password", password);
+  }
 
   const response = await fetch(`${GATEWAY_URL}/upload`, {
     method: "POST",

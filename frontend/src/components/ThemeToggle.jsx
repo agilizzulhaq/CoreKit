@@ -16,7 +16,13 @@ export default function ThemeToggle() {
       onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
       title={theme === "light" ? "Aktifkan Dark Mode" : "Aktifkan Light Mode"}
     >
-      {theme === "light" ? "🌙" : "☀️"}
+      <img
+        src={
+          theme === "light" ? "/assets/moon-fill.svg" : "/assets/sun-fill.svg"
+        }
+        alt={theme === "light" ? "Dark mode" : "Light mode"}
+        style={{ width: "16px", height: "16px", filter: "invert(1)" }}
+      />
     </button>
   );
 }

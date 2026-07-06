@@ -6,7 +6,7 @@ export default function RotateWorkspace({ files, closeModal }) {
   const [pageThumbnails, setPageThumbnails] = useState([]);
   const [isLoadingPages, setIsLoadingPages] = useState(true);
   const [selectedPages, setSelectedPages] = useState(new Set());
-  const [pageRotations, setPageRotations] = useState({}); // { pageNumber: angle }
+  const [pageRotations, setPageRotations] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
 
   const file = files[0];
@@ -23,7 +23,10 @@ export default function RotateWorkspace({ files, closeModal }) {
     const renderAllPages = async () => {
       try {
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pdf = await pdfjsLib.getDocument({
+          data: arrayBuffer,
+          password: file.password || "",
+        }).promise;
         const total = pdf.numPages;
 
         for (let i = 1; i <= total; i++) {
@@ -130,7 +133,7 @@ export default function RotateWorkspace({ files, closeModal }) {
 
     setIsProcessing(true);
     try {
-      const uploadRes = await uploadDocument(file);
+      const uploadRes = await uploadDocument(file, file.password);
       const docId = uploadRes.engineState?.doc_id;
       if (!docId) {
         throw new Error("Gagal mendapatkan doc_id dari server.");
@@ -269,7 +272,7 @@ export default function RotateWorkspace({ files, closeModal }) {
             style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "#333",
+              color: "var(--text-primary)",
               marginBottom: "10px",
               display: "block",
             }}
@@ -325,7 +328,7 @@ export default function RotateWorkspace({ files, closeModal }) {
         <div
           style={{
             fontSize: "13px",
-            color: "#6b7280",
+            color: "var(--text-secondary)",
             marginBottom: "12px",
             textAlign: "center",
           }}

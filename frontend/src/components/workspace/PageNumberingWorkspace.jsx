@@ -124,7 +124,10 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
     const renderAllPages = async () => {
       try {
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pdf = await pdfjsLib.getDocument({
+          data: arrayBuffer,
+          password: file.password || "",
+        }).promise;
         const total = pdf.numPages;
 
         for (let i = 1; i <= total; i++) {
@@ -206,7 +209,7 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
 
     setIsProcessing(true);
     try {
-      const uploadRes = await uploadDocument(file);
+      const uploadRes = await uploadDocument(file, file.password);
       const docId = uploadRes.engineState?.doc_id;
       if (!docId) throw new Error("Gagal mendapatkan doc_id dari server.");
 
@@ -280,7 +283,7 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
             style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "#333",
+              color: "var(--text-primary)",
               marginBottom: "8px",
               display: "block",
             }}
@@ -291,6 +294,11 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
             type="text"
             className="form-control"
             value={pagesInput}
+            style={{
+              background: "var(--surface)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border)",
+            }}
             onChange={(e) => setPagesInput(e.target.value)}
             placeholder="all"
           />
@@ -302,7 +310,7 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
             style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "#333",
+              color: "var(--text-primary)",
               marginBottom: "8px",
               display: "block",
             }}
@@ -313,6 +321,11 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
             className="form-control"
             value={style}
             onChange={(e) => setStyle(e.target.value)}
+            style={{
+              background: "var(--surface)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border)",
+            }}
           >
             {STYLE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -328,7 +341,7 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
             style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "#333",
+              color: "var(--text-primary)",
               marginBottom: "8px",
               display: "block",
             }}
@@ -339,6 +352,11 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
             className="form-control"
             value={position}
             onChange={(e) => setPosition(e.target.value)}
+            style={{
+              background: "var(--surface)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border)",
+            }}
           >
             {POSITION_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -354,7 +372,7 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
             style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "#333",
+              color: "var(--text-primary)",
               marginBottom: "8px",
               display: "block",
             }}
@@ -392,7 +410,12 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
                   onFocus={() => setStartMode("start_at")}
-                  style={{ width: "60px" }}
+                  style={{
+                    width: "60px",
+                    background: "var(--surface)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border)",
+                  }}
                 />
               </span>
             </label>
@@ -405,7 +428,7 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
             style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "#333",
+              color: "var(--text-primary)",
               marginBottom: "8px",
               display: "block",
             }}
@@ -458,7 +481,13 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
                 placeholder="Prefix"
                 value={customPrefix}
                 onChange={(e) => setCustomPrefix(e.target.value)}
-                style={{ flex: "1 1 70px", minWidth: 0 }}
+                style={{
+                  flex: "1 1 70px",
+                  minWidth: 0,
+                  background: "var(--surface)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border)",
+                }}
               />
               <span
                 style={{
@@ -476,7 +505,14 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
                 placeholder="dari"
                 value={customDivider}
                 onChange={(e) => setCustomDivider(e.target.value)}
-                style={{ flex: "0 1 60px", minWidth: 0, textAlign: "center" }}
+                style={{
+                  flex: "0 1 60px",
+                  minWidth: 0,
+                  textAlign: "center",
+                  background: "var(--surface)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border)",
+                }}
               />
               <span
                 style={{
@@ -494,7 +530,13 @@ export default function PageNumberingWorkspace({ files, closeModal }) {
                 placeholder="Suffix"
                 value={customSuffix}
                 onChange={(e) => setCustomSuffix(e.target.value)}
-                style={{ flex: "1 1 70px", minWidth: 0 }}
+                style={{
+                  flex: "1 1 70px",
+                  minWidth: 0,
+                  background: "var(--surface)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border)",
+                }}
               />
             </div>
           )}

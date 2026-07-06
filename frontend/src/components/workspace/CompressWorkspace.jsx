@@ -50,7 +50,10 @@ export default function CompressWorkspace({ files, closeModal }) {
     const renderPreview = async () => {
       try {
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pdf = await pdfjsLib.getDocument({
+          data: arrayBuffer,
+          password: file.password || "",
+        }).promise;
         if (!isMounted) return;
         setPageCount(pdf.numPages);
 
@@ -93,7 +96,7 @@ export default function CompressWorkspace({ files, closeModal }) {
     setIsProcessing(true);
     setResultInfo(null);
     try {
-      const uploadRes = await uploadDocument(file);
+      const uploadRes = await uploadDocument(file, file.password);
       const docId = uploadRes.engineState?.doc_id;
       if (!docId) throw new Error("Gagal mendapatkan doc_id dari server.");
 
@@ -169,7 +172,7 @@ export default function CompressWorkspace({ files, closeModal }) {
           style={{
             fontSize: "14px",
             fontWeight: "600",
-            color: "#333",
+            color: "var(--text-primary)",
             marginBottom: "6px",
             display: "block",
           }}
@@ -183,6 +186,16 @@ export default function CompressWorkspace({ files, closeModal }) {
               key={level.value}
               className="compression-card"
               htmlFor={`compress-level-${level.value}`}
+              style={{
+                background:
+                  selectedLevel === level.value
+                    ? "rgba(0, 120, 215, 0.1)"
+                    : "var(--surface)",
+                borderColor:
+                  selectedLevel === level.value
+                    ? "var(--primary)"
+                    : "var(--border)",
+              }}
             >
               <input
                 type="radio"
@@ -192,8 +205,23 @@ export default function CompressWorkspace({ files, closeModal }) {
                 onChange={() => setSelectedLevel(level.value)}
               />
               <div className="cc-content">
-                <div className="cc-title">{level.title}</div>
-                <div className="cc-desc">{level.desc}</div>
+                <div
+                  className="cc-title"
+                  style={{
+                    color:
+                      selectedLevel === level.value
+                        ? "var(--primary)"
+                        : "var(--text-primary)",
+                  }}
+                >
+                  {level.title}
+                </div>
+                <div
+                  className="cc-desc"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {level.desc}
+                </div>
               </div>
             </label>
           ))}
